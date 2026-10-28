@@ -111,27 +111,25 @@ async function Members() {
                 id: p.id,
                 node: (
                   <>
-                    {/* Ad, e-posta, son giriş ve roller tek satırda; dar ekranda alt satıra kayar */}
+                    {/* Ad ve e-posta alt alta; yanında son görülme ve roller. Dar ekranda alt satıra kayar */}
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar name={name} src={p.avatar_url} />
-                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
-                        <p
-                          className="max-w-full min-w-[6rem] shrink-[0.3] truncate font-bold text-slate-900"
-                          title={name}
-                        >
-                          {name}
-                          {isSelf && (
-                            <span className="ml-1.5 text-sm font-medium text-slate-400">(siz)</span>
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <div className="min-w-0 max-w-full">
+                          <p className="font-bold leading-tight break-words text-slate-900">
+                            {name}
+                            {isSelf && (
+                              <span className="ml-1.5 text-sm font-medium text-slate-400">
+                                (siz)
+                              </span>
+                            )}
+                          </p>
+                          {auth.get(p.id)?.email && (
+                            <p className="mt-0.5 text-xs leading-tight break-all text-slate-500">
+                              {auth.get(p.id)?.email}
+                            </p>
                           )}
-                        </p>
-                        {auth.get(p.id)?.email && (
-                          <span
-                            title={auth.get(p.id)?.email}
-                            className="max-w-full min-w-[4.5rem] shrink-[4] truncate text-xs text-slate-500"
-                          >
-                            {auth.get(p.id)?.email}
-                          </span>
-                        )}
+                        </div>
                         <LastSeen at={latest(p.last_seen_at, auth.get(p.id)?.lastSignIn ?? null)} />
                         <div className="flex shrink-0 flex-wrap gap-1.5 lg:flex-nowrap">
                           {memberRoles.length === 0 && (
