@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
 import { card } from "@/components/ui/styles";
 import type { ActivityAction } from "@/types/database";
 import { RelativeTime } from "./relative-time";
@@ -89,7 +89,7 @@ export async function ActivityFeed() {
             return (
               <li key={a.id} className="relative flex gap-3 py-2">
                 <span className="relative z-[1] shrink-0">
-                  <Avatar name={name} src={a.actor?.avatar_url} size="sm" className="size-8 ring-2 ring-white" />
+                  <ZoomableAvatar name={name} src={a.actor?.avatar_url} size="sm" className="size-8 ring-2 ring-white" />
                   <span
                     className={`absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full ring-2 ring-white ${meta.tone}`}
                   >

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CircleAlert, Clock, Lock, ShieldCheck } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
 import { card } from "@/components/ui/styles";
 import { MemberRolesEditor } from "@/components/members/member-roles-editor";
 import { CreateRoleForm, DeleteRoleButton } from "@/components/members/role-controls";
@@ -113,7 +113,7 @@ async function Members() {
                   <>
                     {/* Ad ve e-posta alt alta; yanında son görülme ve roller. Dar ekranda alt satıra kayar */}
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <Avatar name={name} src={p.avatar_url} />
+                      <ZoomableAvatar name={name} src={p.avatar_url} />
                       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
                         <div className="min-w-0 max-w-full">
                           <p className="font-bold leading-tight break-words text-slate-900">

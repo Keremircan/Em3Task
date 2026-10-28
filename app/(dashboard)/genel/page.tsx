@@ -8,7 +8,7 @@ import { extractLinks, GENERAL_LINK_SCOPE, withoutRemoved } from "@/lib/links";
 import { parseDayParam, todayKey } from "@/lib/days";
 import { kindOfMime } from "@/lib/general-files";
 import { Markdown } from "@/components/markdown/markdown";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
 import { card } from "@/components/ui/styles";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { ChatScroller } from "@/components/general/chat-scroller";
@@ -179,7 +179,7 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                     )}
                     <div className={`group flex gap-3 rounded-xl px-2 py-1 hover:bg-slate-50/80 ${grouped ? "" : "mt-3"}`}>
                       <div className="w-8 shrink-0">
-                        {!grouped && <Avatar name={name} src={m.author?.avatar_url} size="sm" />}
+                        {!grouped && <ZoomableAvatar name={name} src={m.author?.avatar_url} size="sm" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         {!grouped && (

@@ -6,7 +6,7 @@ import { ArrowLeft, CalendarDays, FolderKanban, Hand } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { isUuid } from "@/lib/tasks";
-import { PriorityBadge } from "@/components/tasks/priority";
+import { PriorityControl } from "@/components/tasks/priority-control";
 import { dayKey, formatDateTime } from "@/lib/format";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
 import { extractLinks, withoutRemoved } from "@/lib/links";
@@ -179,7 +179,7 @@ async function TaskDetail({
               <div className="flex flex-wrap items-center gap-2">
                 <OptimisticStatusBadge id={task.id} status={task.status} />
                 <RevisionBadge count={task.revision_count} />
-              <PriorityBadge priority={task.priority} />
+              <PriorityControl taskId={task.id} priority={task.priority} />
               </div>
               <h1 className="mt-3 text-2xl leading-tight font-bold tracking-tight text-slate-900 [overflow-wrap:anywhere]">
                 {task.title}

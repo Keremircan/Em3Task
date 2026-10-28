@@ -6,7 +6,7 @@ import type { TaskPriority, TaskStatus } from "@/types/database";
 import { formatDateTime } from "@/lib/format";
 import { previewText } from "@/lib/tasks";
 import { StatusBadge } from "./status-badge";
-import { PriorityBadge } from "./priority";
+import { PriorityControl } from "./priority-control";
 import { RevisionBadge } from "./revision";
 import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
@@ -105,7 +105,7 @@ export function TaskList({
                 </Link>
                 <StatusBadge status={task.status} />
                 <RevisionBadge count={task.revision_count} />
-                <PriorityBadge priority={task.priority} />
+                <PriorityControl taskId={task.id} priority={task.priority} />
               </div>
               {task.description && (
                 <p className="mt-1 line-clamp-1 text-sm text-slate-500">

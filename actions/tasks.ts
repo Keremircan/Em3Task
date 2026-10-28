@@ -309,3 +309,27 @@ export async function completeTask(taskId: string): Promise<ActionResult> {
   revalidateAll();
   return { error: null };
 }
+
+// Öncelik: oturum açmış her ekip üyesi değiştirebilir (rol veya atayan/alan
+// fark etmez). Diğer alanlar etkilenmez; veritabanı kuralları da buna izin verir.
+export async function updateTaskPriority(
+  taskId: string,
+  priority: TaskPriority,
+): Promise<ActionResult> {
+  await getUserId(); // oturum kontrolü
+  if (!isUuid(taskId)) return { error: "Geçersiz görev." };
+  if (!isTaskPriority(priority)) return { error: "Geçersiz öncelik." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ priority })
+    .eq("id", taskId)
+    .select("id");
+
+  if (error) return { error: dbError(error, "Öncelik değiştirilemedi.") };
+  if (!data.length) return { error: "Görev bulunamadı (silinmiş olabilir)." };
+
+  revalidateAll();
+  return { error: null };
+}

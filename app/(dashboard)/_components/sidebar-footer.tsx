@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { initials } from "@/lib/tasks";
 import { logout } from "@/app/login/actions";
 import { LiveUpdates } from "@/components/realtime/live-updates";
+import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
 
 // Sidebar'ın en altında her zaman görünen kullanıcı bilgisi ve güvenli çıkış
 export async function SidebarFooter() {
@@ -11,9 +12,13 @@ export async function SidebarFooter() {
   return (
     <div className="shrink-0 border-t border-white/[0.06] p-2.5">
       <div className="flex items-center gap-3 px-2 py-2">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-xs font-semibold text-neutral-100">
-          {initials(user.name)}
-        </span>
+        {user.avatarUrl ? (
+          <ZoomableAvatar name={user.name} src={user.avatarUrl} size="sm" className="size-8" />
+        ) : (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-xs font-semibold text-neutral-100">
+            {initials(user.name)}
+          </span>
+        )}
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
           <p className="flex items-center gap-2 truncate text-xs text-neutral-400">

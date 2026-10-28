@@ -385,10 +385,11 @@ begin
     raise exception 'Görevi oluşturan kişi değiştirilemez.' using errcode = '42501';
   end if;
 
-  -- Başlık, açıklama, proje vb. alanları sadece görevi atayan düzenler
-  if (new.title, new.description, new.project_id, new.priority, new.due_date)
+  -- Başlık, açıklama, proje ve teslim tarihini sadece görevi atayan düzenler.
+  -- Öncelik (priority) herkese açıktır: ekipten herkes değiştirebilir.
+  if (new.title, new.description, new.project_id, new.due_date)
      is distinct from
-     (old.title, old.description, old.project_id, old.priority, old.due_date)
+     (old.title, old.description, old.project_id, old.due_date)
      and not is_creator then
     raise exception 'Görevi sadece atayan kişi düzenleyebilir.' using errcode = '42501';
   end if;

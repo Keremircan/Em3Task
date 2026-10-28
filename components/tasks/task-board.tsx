@@ -7,7 +7,7 @@ import type { TaskPriority, TaskStatus } from "@/types/database";
 import { requestRevision } from "@/actions/tasks";
 import { formatDateTime } from "@/lib/format";
 import { BOARD_COLUMNS, canRequestRevision, STATUS_DOTS } from "@/lib/tasks";
-import { PriorityBadge } from "./priority";
+import { PriorityControl } from "./priority-control";
 import { RevisionBadge, RevisionDialog } from "./revision";
 import { OptimisticTasksProvider, useOptimisticTasks, useShownTasks } from "./optimistic-tasks";
 import { safe } from "@/lib/safe-action";
@@ -63,16 +63,21 @@ function Columns({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
                   key={task.id}
                   className="rounded-lg border border-slate-200/60 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:border-teal-200 hover:shadow-md"
                 >
-                  <Link href={`/gorevler/${task.id}`} className="block p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[13.5px] leading-snug font-semibold text-slate-900 [overflow-wrap:anywhere]">
-                        {task.title}
-                      </p>
-                      <span className="flex shrink-0 flex-col items-end gap-1">
-                        <PriorityBadge priority={task.priority} size="xs" />
-                        <RevisionBadge count={task.revision_count} size="xs" />
-                      </span>
-                    </div>
+                  {/* Başlık ve öncelik: öncelik rozeti bağlantının dışında, tıklanınca
+                      öncelik listesi açılır; kartın geri kalanı göreve götürür */}
+                  <div className="flex items-start justify-between gap-2 px-3 pt-3">
+                    <Link
+                      href={`/gorevler/${task.id}`}
+                      className="min-w-0 flex-1 text-[13.5px] leading-snug font-semibold text-slate-900 [overflow-wrap:anywhere]"
+                    >
+                      {task.title}
+                    </Link>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <PriorityControl taskId={task.id} priority={task.priority} size="xs" />
+                      <RevisionBadge count={task.revision_count} size="xs" />
+                    </span>
+                  </div>
+                  <Link href={`/gorevler/${task.id}`} className="block px-3 pb-3" tabIndex={-1}>
                     <FromTo
                       from={task.creator?.full_name ?? "Eski üye"}
                       to={

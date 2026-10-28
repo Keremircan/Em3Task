@@ -5,7 +5,7 @@ import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
-import { AVATARS_BUCKET, avatarPathFromUrl, isOwnAvatarPath } from "@/lib/avatars";
+import { AVATARS_BUCKET, avatarPathFromUrl, isOwnAvatarPath, largeAvatarPath } from "@/lib/avatars";
 
 export type ProfileResult = { error: string | null };
 
@@ -29,12 +29,14 @@ export async function setAvatar(
     .eq("id", user.id)
     .select("id");
   if (error || !data.length) {
-    if (path) await removeOwnFiles(user.id, [path]);
+    if (path) await removeOwnFiles(user.id, [path, largeAvatarPath(path)]);
     return { error: "Profil fotoğrafı kaydedilemedi." };
   }
 
   const oldPath = avatarPathFromUrl(user.avatarUrl);
-  if (oldPath && oldPath !== path) await removeOwnFiles(user.id, [oldPath]);
+  if (oldPath && oldPath !== path) {
+    await removeOwnFiles(user.id, [oldPath, largeAvatarPath(oldPath)]);
+  }
 
   revalidatePath("/", "layout");
   return { error: null, url };
