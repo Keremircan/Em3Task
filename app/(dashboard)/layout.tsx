@@ -8,6 +8,7 @@ import { MobileTabBar, MobileTabBarList } from "./_components/mobile-tab-bar";
 import { MobilePageTitle, MobileTitleText } from "./_components/mobile-page-title";
 import { Logo } from "@/components/ui/logo";
 import { SidebarFooter, SidebarFooterSkeleton } from "./_components/sidebar-footer";
+import { PresencePing } from "@/components/realtime/presence-ping";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
@@ -46,6 +47,9 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
           © 2026 Em3Task · Ekip içi iş takip
         </footer>
       </main>
+
+      {/* Üyenin "son görülme" zamanını kaydeder (Üyeler sayfasında görünür) */}
+      <PresencePing />
 
       <Suspense fallback={<MobileTabBarList pathname={null} />}>
         <MobileTabBar />

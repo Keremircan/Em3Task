@@ -250,9 +250,11 @@ export function RemoveMemberButton({ memberId, memberName }: { memberId: string;
       <button
         type="button"
         onClick={() => setOpen(true)}
+        title={`${memberName}: üyeyi çıkar`}
+        aria-label={`${memberName}: üyeyi çıkar`}
         className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-rose-200 bg-white px-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
       >
-        <UserMinus className="size-3.5" /> Üyeyi çıkar
+        <UserMinus className="size-3.5" /> <span className="xl:max-2xl:hidden">Üyeyi çıkar</span>
       </button>
       <ConfirmDialog
         open={open}

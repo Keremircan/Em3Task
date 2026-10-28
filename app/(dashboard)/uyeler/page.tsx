@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CircleAlert, Lock, ShieldCheck } from "lucide-react";
+import { CircleAlert, Clock, Lock, ShieldCheck } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { Avatar } from "@/components/ui/avatar";
@@ -36,12 +36,15 @@ async function Members() {
   const supabase = await createClient();
 
   // Kullanıcı bilgisi (Admin mi?), yetki ayarı ve sayfa verileri aynı turda, paralel
-  const [user, permission, emails, { data: profiles }, { data: roles }, { data: links }] =
+  const [user, permission, auth, { data: profiles }, { data: roles }, { data: links }] =
     await Promise.all([
       getCurrentUser(),
       getMemberPermission(),
-      getMemberEmails(),
-      supabase.from("profiles").select("id, full_name, avatar_url").order("full_name"),
+      getMemberAuthInfo(),
+      supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, last_seen_at")
+        .order("full_name"),
       supabase
         .from("roles")
         .select("id, name, is_system")
@@ -108,19 +111,29 @@ async function Members() {
                 id: p.id,
                 node: (
                   <>
-                    <div className="flex min-w-0 items-center gap-3.5">
+                    {/* Ad, e-posta, son giriş ve roller tek satırda; dar ekranda alt satıra kayar */}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar name={name} src={p.avatar_url} />
-                      <div className="min-w-0">
-                        <p className="truncate font-bold text-slate-900">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
+                        <p
+                          className="max-w-full min-w-[6rem] shrink-[0.3] truncate font-bold text-slate-900"
+                          title={name}
+                        >
                           {name}
                           {isSelf && (
-                            <span className="ml-2 text-sm font-medium text-slate-400">(siz)</span>
+                            <span className="ml-1.5 text-sm font-medium text-slate-400">(siz)</span>
                           )}
                         </p>
-                        {emails.get(p.id) && (
-                          <p className="truncate text-xs text-slate-500">{emails.get(p.id)}</p>
+                        {auth.get(p.id)?.email && (
+                          <span
+                            title={auth.get(p.id)?.email}
+                            className="max-w-full min-w-[4.5rem] shrink-[4] truncate text-xs text-slate-500"
+                          >
+                            {auth.get(p.id)?.email}
+                          </span>
                         )}
-                        <div className="mt-1 flex flex-wrap gap-1.5">
+                        <LastSeen at={latest(p.last_seen_at, auth.get(p.id)?.lastSignIn ?? null)} />
+                        <div className="flex shrink-0 flex-wrap gap-1.5 lg:flex-nowrap">
                           {memberRoles.length === 0 && (
                             <span className="text-xs text-slate-400">Rol yok</span>
                           )}
@@ -130,7 +143,7 @@ async function Members() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                       {user.isAdmin && (
                         <MemberRolesEditor
                           memberId={p.id}
@@ -147,7 +160,10 @@ async function Members() {
                             }
                             className="inline-flex items-center gap-1 text-xs text-slate-400"
                           >
-                            <Lock className="size-3.5" /> {isSelf ? "Siz" : "Çıkarılamaz"}
+                            <Lock className="size-3.5" />{" "}
+                            <span className="xl:max-2xl:hidden">
+                              {isSelf ? "Siz" : "Çıkarılamaz"}
+                            </span>
                           </span>
                         ) : (
                           <RemoveMemberButton memberId={p.id} memberName={name} />
@@ -202,12 +218,83 @@ async function Members() {
   );
 }
 
-// E-postalar auth tablosunda; sunucuda service role ile okunur (anahtar yoksa boş)
-async function getMemberEmails(): Promise<Map<string, string>> {
+// E-posta ve son giriş zamanı auth tablosunda; sunucuda service role ile okunur
+// (anahtar yoksa boş). Tarayıcıya sadece bu iki bilgi gider.
+type AuthInfo = { email: string; lastSignIn: string | null };
+
+async function getMemberAuthInfo(): Promise<Map<string, AuthInfo>> {
   const admin = createAdminClient();
   if (!admin) return new Map();
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  return new Map((data?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+  return new Map(
+    (data?.users ?? []).map((u) => [
+      u.id,
+      { email: u.email ?? "", lastSignIn: u.last_sign_in_at ?? null },
+    ]),
+  );
+}
+
+const signInFormat = new Intl.DateTimeFormat("tr-TR", {
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Istanbul",
+});
+const signInFormatWithYear = new Intl.DateTimeFormat("tr-TR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Istanbul",
+});
+
+// İki zamandan yeni olanı (son görülme ya da son şifreyle giriş)
+function latest(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return new Date(a) > new Date(b) ? a : b;
+}
+
+const ACTIVE_MS = 10 * 60 * 1000; // son 10 dakikada görüldüyse "Şu an aktif"
+
+// "Son görülme: 25 Ekim 15:30" (geçen yıldan eskiyse yıl da yazılır)
+function LastSeen({ at }: { at: string | null }) {
+  const chip =
+    "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap";
+  if (!at) {
+    return (
+      <span className={`${chip} bg-slate-50 text-slate-400`}>
+        <Clock className="size-3" /> Henüz giriş yapmadı
+      </span>
+    );
+  }
+  const date = new Date(at);
+  const full = signInFormatWithYear.format(date);
+  // Sunucuda çizilir: "şimdi" isteğin geldiği an
+  // eslint-disable-next-line react-hooks/purity -- istek anındaki saat bilerek kullanılıyor
+  const now = Date.now();
+  if (now - date.getTime() < ACTIVE_MS) {
+    return (
+      <span
+        title={`Son görülme: ${full}`}
+        className={`${chip} bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70`}
+      >
+        <span className="size-1.5 rounded-full bg-emerald-500" /> Şu an aktif
+      </span>
+    );
+  }
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  const text = (sameYear ? signInFormat : signInFormatWithYear).format(date).replace(",", "");
+  return (
+    <span
+      title={`Son görülme: ${full}`}
+      className={`${chip} bg-slate-50 text-slate-500 ring-1 ring-slate-200/70`}
+    >
+      <Clock className="size-3" /> Son görülme: {text}
+    </span>
+  );
 }
 
 function RoleBadge({ name, system }: { name: string; system: boolean }) {

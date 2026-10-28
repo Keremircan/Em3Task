@@ -1090,3 +1090,27 @@ create policy "Avatars insert own" on storage.objects
 create policy "Avatars delete own" on storage.objects
   for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+
+-- ---------------------------------------------------------------------
+-- SON GÖRÜLME (son-gorulme.sql)
+-- ---------------------------------------------------------------------
+alter table public.profiles add column if not exists last_seen_at timestamptz;
+
+create or replace function public.profiles_stamp_last_seen()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.last_seen_at is distinct from old.last_seen_at then
+    new.last_seen_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_stamp_last_seen on public.profiles;
+create trigger profiles_stamp_last_seen
+  before update on public.profiles
+  for each row execute function public.profiles_stamp_last_seen();

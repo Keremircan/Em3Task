@@ -56,7 +56,7 @@ export async function sendTestPush(): Promise<PushResult> {
   const userId = await getUserId();
   if (!isPushConfigured()) return { error: "Bildirimler sunucuda yapılandırılmamış." };
   notifyUsers([userId], {
-    title: "Em3Task bildirimleri açık",
+    title: "Bildirimler açık",
     body: "Görev atandığında, yorum veya revize geldiğinde bu cihaza haber vereceğiz.",
     url: "/gorevlerim",
     tag: "test",

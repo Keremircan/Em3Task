@@ -61,9 +61,11 @@ export function MemberRolesEditor({
           setAssigned(new Set(assignedRoleIds));
           setOpen(true);
         }}
+        title={`${memberName}: rol ata`}
+        aria-label={`${memberName}: rol ata`}
         className={smallGhostButton}
       >
-        <Tag className="size-4" /> Rol ata
+        <Tag className="size-4" /> <span className="xl:max-2xl:hidden">Rol ata</span>
       </button>
       <Modal
         open={open}

@@ -11,6 +11,7 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   created_at: string;
+  last_seen_at: string | null; // uygulamayı en son kullandığı an (veritabanı saati)
 };
 
 export type Project = {
