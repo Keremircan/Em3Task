@@ -1114,3 +1114,169 @@ drop trigger if exists profiles_stamp_last_seen on public.profiles;
 create trigger profiles_stamp_last_seen
   before update on public.profiles
   for each row execute function public.profiles_stamp_last_seen();
+
+
+-- ---------------------------------------------------------------------
+-- ETKİNLİK AKIŞI (etkinlikler.sql)
+-- ---------------------------------------------------------------------
+create table if not exists public.activity_log (
+  id          bigint generated always as identity primary key,
+  actor_id    uuid references public.profiles (id) on delete set null,
+  action      text not null check (action in (
+                'task_created', 'task_reassigned', 'task_accepted', 'task_submitted',
+                'task_revision', 'task_completed', 'task_deleted',
+                'comment_added', 'project_created')),
+  task_id     uuid references public.tasks (id) on delete set null,
+  project_id  uuid references public.projects (id) on delete set null,
+  target_id   uuid references public.profiles (id) on delete set null, -- atanan kişi
+  title       text not null default '',  -- görev/proje adı (kayıt anındaki)
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists activity_log_created_idx on public.activity_log (created_at desc);
+create index if not exists activity_log_task_idx    on public.activity_log (task_id);
+
+alter table public.activity_log enable row level security;
+
+revoke all on public.activity_log from anon, authenticated;
+grant select on public.activity_log to authenticated;
+
+drop policy if exists "Activity read" on public.activity_log;
+create policy "Activity read" on public.activity_log
+  for select to authenticated using (true);
+
+-- ---------------------------------------------------------------------
+-- Tetikleyiciler
+-- ---------------------------------------------------------------------
+create or replace function public.log_task_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+  act text;
+begin
+  if uid is null then
+    return coalesce(new, old); -- sunucu/SQL Editor işlemleri kaydedilmez
+  end if;
+
+  if tg_op = 'INSERT' then
+    insert into public.activity_log (actor_id, action, task_id, project_id, target_id, title)
+    values (uid, 'task_created', new.id, new.project_id, new.assigned_to, new.title);
+    return new;
+  end if;
+
+  if tg_op = 'DELETE' then
+    insert into public.activity_log (actor_id, action, task_id, project_id, title)
+    values (uid, 'task_deleted', null, old.project_id, old.title);
+    return old;
+  end if;
+
+  -- UPDATE: durum geçişleri
+  if new.status is distinct from old.status then
+    act := case
+      when old.status = 'pending'     and new.status = 'in_progress' then 'task_accepted'
+      when old.status = 'in_progress' and new.status = 'review'      then 'task_submitted'
+      when old.status = 'review'      and new.status = 'in_progress' then 'task_revision'
+      when new.status = 'done'                                        then 'task_completed'
+      else null
+    end;
+  end if;
+
+  -- Atayan kişi görevi başkasına devretti
+  if act is null and new.assigned_to is distinct from old.assigned_to then
+    act := 'task_reassigned';
+  end if;
+
+  if act is not null then
+    insert into public.activity_log (actor_id, action, task_id, project_id, target_id, title)
+    values (uid, act, new.id, new.project_id, new.assigned_to, new.title);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tasks_log_activity on public.tasks;
+create trigger tasks_log_activity
+  after insert or update or delete on public.tasks
+  for each row execute function public.log_task_activity();
+
+create or replace function public.log_comment_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  t record;
+begin
+  -- Revize notları "Revize istedi" olarak zaten kaydediliyor
+  if auth.uid() is null or new.content like '**Revize #%' then
+    return new;
+  end if;
+  select id, project_id, title into t from public.tasks where id = new.task_id;
+  insert into public.activity_log (actor_id, action, task_id, project_id, title)
+  values (auth.uid(), 'comment_added', t.id, t.project_id, coalesce(t.title, ''));
+  return new;
+end;
+$$;
+
+drop trigger if exists task_comments_log_activity on public.task_comments;
+create trigger task_comments_log_activity
+  after insert on public.task_comments
+  for each row execute function public.log_comment_activity();
+
+create or replace function public.log_project_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null then
+    insert into public.activity_log (actor_id, action, project_id, title)
+    values (auth.uid(), 'project_created', new.id, new.name);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists projects_log_activity on public.projects;
+create trigger projects_log_activity
+  after insert on public.projects
+  for each row execute function public.log_project_activity();
+
+revoke execute on function public.log_task_activity()    from public, anon, authenticated;
+revoke execute on function public.log_comment_activity() from public, anon, authenticated;
+revoke execute on function public.log_project_activity() from public, anon, authenticated;
+
+
+-- ---------------------------------------------------------------------
+-- ETKİNLİK SINIRI: sadece son 10 kayıt (etkinlik-siniri.sql)
+-- ---------------------------------------------------------------------
+create or replace function public.trim_activity_log()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.activity_log
+  where id not in (
+    select id from public.activity_log
+    order by created_at desc, id desc
+    limit 10
+  );
+  return null;
+end;
+$$;
+
+revoke execute on function public.trim_activity_log() from public, anon, authenticated;
+
+-- Satır başına değil, ekleme işlemi başına bir kez çalışır
+drop trigger if exists activity_log_keep_last_10 on public.activity_log;
+create trigger activity_log_keep_last_10
+  after insert on public.activity_log
+  for each statement execute function public.trim_activity_log();

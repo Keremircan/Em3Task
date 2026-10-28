@@ -98,6 +98,29 @@ export type RemovedLink = {
   created_at: string;
 };
 
+// Etkinlik akışı: sadece veritabanı tetikleyicileri yazar, herkes okur
+export type ActivityAction =
+  | "task_created"
+  | "task_reassigned"
+  | "task_accepted"
+  | "task_submitted"
+  | "task_revision"
+  | "task_completed"
+  | "task_deleted"
+  | "comment_added"
+  | "project_created";
+
+export type ActivityLog = {
+  id: number;
+  actor_id: string | null;
+  action: ActivityAction;
+  task_id: string | null;
+  project_id: string | null;
+  target_id: string | null;
+  title: string;
+  created_at: string;
+};
+
 // Web Push abonelikleri (cihaz başına bir satır); kullanıcı sadece kendininkini görür
 export type PushSubscriptionRow = {
   id: string;
@@ -169,6 +192,16 @@ export type Database = {
           Rel<"tasks_assigned_to_fkey", "assigned_to", "profiles">,
           Rel<"tasks_created_by_fkey", "created_by", "profiles">,
           Rel<"tasks_project_id_fkey", "project_id", "projects">,
+        ]
+      >;
+      activity_log: Table<
+        ActivityLog,
+        Pick<ActivityLog, "action"> & Partial<Omit<ActivityLog, "action">>,
+        [
+          Rel<"activity_log_actor_id_fkey", "actor_id", "profiles">,
+          Rel<"activity_log_target_id_fkey", "target_id", "profiles">,
+          Rel<"activity_log_task_id_fkey", "task_id", "tasks">,
+          Rel<"activity_log_project_id_fkey", "project_id", "projects">,
         ]
       >;
       task_comments: Table<

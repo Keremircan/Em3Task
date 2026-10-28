@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/tasks/status-badge";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { PriorityBadge } from "@/components/tasks/priority";
 import { PageHeader } from "./_components/page-header";
+import { ActivityFeed, ActivityFeedSkeleton } from "@/components/home/activity-feed";
 
 export default function HomePage() {
   return (
@@ -26,31 +27,51 @@ export default function HomePage() {
         <Stats />
       </Suspense>
 
-      <Suspense fallback={<div className={`${card} mt-4 h-64 animate-pulse`} />}>
-        <Inbox />
-      </Suspense>
+      {/* Geniş ekranda solda bekleyen işler + nasıl çalışır, sağda etkinlik akışı.
+          Dar ekranda sıra: bekleyen işler → etkinlikler → nasıl çalışır */}
+      <div className="mt-4 grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
+        {/* Sol sütun: dar ekranda "contents" ile kendi çocukları ızgaraya dağılır (sıralama için) */}
+        <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-4">
+          <div className="order-1 min-w-0">
+            <Suspense fallback={<div className={`${card} h-64 animate-pulse`} />}>
+              <Inbox />
+            </Suspense>
+          </div>
+          <HowItWorks />
+        </div>
 
-      <section className={`${card} mt-4 p-5`}>
-        <h2 className="text-base font-bold text-slate-900">Nasıl çalışır?</h2>
-        <ol className="mt-3 grid grid-cols-1 gap-3 text-[13.5px] text-slate-600 md:grid-cols-2 xl:grid-cols-4">
-          <Step n={1} title="İş ata">
-            Atadığım Görevler’den projesini ve kişisini seçerek işi oluşturun. Görev
-            “Onay Bekliyor” olarak başlar.
-          </Step>
-          <Step n={2} title="Kabul et">
-            Görevi alan kişi Görevlerim’den kabul eder, görev “Yapılıyor” olur.
-            “Herkes”e atanan işi ilk kabul eden üstlenir.
-          </Step>
-          <Step n={3} title="Kontrole gönder">
-            İş bitince sadece görevi alan kişi “Kontrol”e gönderir.
-          </Step>
-          <Step n={4} title="Tamamla">
-            Sadece görevi atayan kişi işi “Tamamlandı” yapar. Ekip her aşamada
-            görev altında konuşur, dosya ve link paylaşır.
-          </Step>
-        </ol>
-      </section>
+        <div className="order-2 min-w-0 xl:order-none">
+          <Suspense fallback={<ActivityFeedSkeleton />}>
+            <ActivityFeed />
+          </Suspense>
+        </div>
+      </div>
     </>
+  );
+}
+
+function HowItWorks() {
+  return (
+    <section className={`${card} order-3 p-5`}>
+      <h2 className="text-base font-bold text-slate-900">Nasıl çalışır?</h2>
+      <ol className="mt-3 grid grid-cols-1 gap-3 text-[13.5px] text-slate-600 md:grid-cols-2">
+        <Step n={1} title="İş ata">
+          Atadığım Görevler’den projesini ve kişisini seçerek işi oluşturun. Görev “Onay Bekliyor”
+          olarak başlar.
+        </Step>
+        <Step n={2} title="Kabul et">
+          Görevi alan kişi Görevlerim’den kabul eder, görev “Yapılıyor” olur. “Herkes”e atanan işi
+          ilk kabul eden üstlenir.
+        </Step>
+        <Step n={3} title="Kontrole gönder">
+          İş bitince sadece görevi alan kişi “Kontrol”e gönderir.
+        </Step>
+        <Step n={4} title="Tamamla">
+          Sadece görevi atayan kişi işi “Tamamlandı” yapar. Ekip her aşamada görev altında konuşur,
+          dosya ve link paylaşır.
+        </Step>
+      </ol>
+    </section>
   );
 }
 
@@ -81,10 +102,30 @@ async function Stats() {
   ]);
 
   const items: StatItem[] = [
-    { value: members.count ?? 0, label: "Ekip üyesi", icon: Users, tone: "bg-teal-50 text-teal-700" },
-    { value: projects.count ?? 0, label: "Proje", icon: FolderKanban, tone: "bg-sky-50 text-sky-600" },
-    { value: open.count ?? 0, label: "Süren iş", icon: ClipboardClock, tone: "bg-amber-50 text-amber-600" },
-    { value: done.count ?? 0, label: "Tamamlanan", icon: CircleCheck, tone: "bg-rose-50 text-rose-600" },
+    {
+      value: members.count ?? 0,
+      label: "Ekip üyesi",
+      icon: Users,
+      tone: "bg-teal-50 text-teal-700",
+    },
+    {
+      value: projects.count ?? 0,
+      label: "Proje",
+      icon: FolderKanban,
+      tone: "bg-sky-50 text-sky-600",
+    },
+    {
+      value: open.count ?? 0,
+      label: "Süren iş",
+      icon: ClipboardClock,
+      tone: "bg-amber-50 text-amber-600",
+    },
+    {
+      value: done.count ?? 0,
+      label: "Tamamlanan",
+      icon: CircleCheck,
+      tone: "bg-rose-50 text-rose-600",
+    },
   ];
 
   return (
@@ -100,7 +141,8 @@ async function Stats() {
 async function Inbox() {
   const userId = await getUserId();
   const supabase = await createClient();
-  const fields = "id, title, status, priority, created_at, project:projects!tasks_project_id_fkey(name)";
+  const fields =
+    "id, title, status, priority, created_at, project:projects!tasks_project_id_fkey(name)";
 
   const [waitingRes, reviewRes] = await Promise.all([
     supabase
@@ -120,7 +162,7 @@ async function Inbox() {
   ]);
 
   return (
-    <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <InboxCard
         title="Kabulünü bekleyen görevler"
         href="/gorevlerim"
@@ -165,9 +207,7 @@ function InboxCard({
     <section className={`${card} p-4 sm:p-5`}>
       {/* Dar ekranda başlık ve link sığmazsa link alt satıra iner (üst üste binmez) */}
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-[15px] leading-snug font-bold text-slate-900 sm:text-base">
-          {title}
-        </h2>
+        <h2 className="text-[15px] leading-snug font-bold text-slate-900 sm:text-base">{title}</h2>
         <Link
           href={href}
           className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold whitespace-nowrap text-teal-700 hover:underline"
@@ -188,7 +228,9 @@ function InboxCard({
                 className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-slate-100 px-3 py-2 transition hover:border-teal-200 hover:bg-teal-50/40"
               >
                 <span className="min-w-0 flex-1 basis-44">
-                  <span className="block truncate text-[13.5px] font-semibold text-slate-900">{t.title}</span>
+                  <span className="block truncate text-[13.5px] font-semibold text-slate-900">
+                    {t.title}
+                  </span>
                   <span className="block truncate text-xs text-slate-500">
                     {t.project?.name ?? "Projesiz"} · {formatDateTime(t.created_at)}
                   </span>
@@ -211,7 +253,9 @@ type StatItem = { value: number; label: string; icon: LucideIcon; tone: string }
 function StatCard({ value, label, icon: Icon, tone }: StatItem) {
   return (
     <div className={`${card} flex min-w-0 items-center gap-3 p-3.5 sm:p-4`}>
-      <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10 ${tone}`}>
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10 ${tone}`}
+      >
         <Icon className="size-[18px]" strokeWidth={2} />
       </div>
       <div className="min-w-0">
