@@ -22,6 +22,7 @@ import {
 import { TaskActions } from "@/components/tasks/task-actions";
 import { RevisionBadge, RevisionNotice } from "@/components/tasks/revision";
 import { TaskComments } from "@/components/tasks/task-comments";
+import { REACTIONS_SELECT } from "@/lib/reactions";
 import { TaskAttachments, type TaskAttachment } from "@/components/tasks/task-attachments";
 import { TaskLinks } from "@/components/tasks/task-links";
 
@@ -96,7 +97,9 @@ async function TaskDetail({
     supabase
       .from("task_comments")
       .select(
-        "id, user_id, content, created_at, author:profiles!task_comments_user_id_fkey(full_name, avatar_url)",
+        `id, user_id, content, created_at,
+         author:profiles!task_comments_user_id_fkey(full_name, avatar_url),
+         ${REACTIONS_SELECT}`,
       )
       .eq("task_id", id)
       .order("created_at", { ascending: true }),
@@ -179,7 +182,7 @@ async function TaskDetail({
               <div className="flex flex-wrap items-center gap-2">
                 <OptimisticStatusBadge id={task.id} status={task.status} />
                 <RevisionBadge count={task.revision_count} />
-              <PriorityControl taskId={task.id} priority={task.priority} />
+                <PriorityControl taskId={task.id} priority={task.priority} />
               </div>
               <h1 className="mt-3 text-2xl leading-tight font-bold tracking-tight text-slate-900 [overflow-wrap:anywhere]">
                 {task.title}

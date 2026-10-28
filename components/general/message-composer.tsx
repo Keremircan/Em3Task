@@ -19,6 +19,7 @@ import { createClient } from "@/utils/supabase/client";
 import { formatBytes } from "@/lib/attachments";
 import { Avatar } from "@/components/ui/avatar";
 import { safe } from "@/lib/safe-action";
+import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
 
 type Sending = { text: string; files: string[]; progress: string | null };
 
@@ -172,13 +173,13 @@ export function MessageComposer({
           </ul>
         )}
 
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-1 sm:gap-2">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             title={`Doküman ekle · ${GENERAL_TYPES_LABEL} · en fazla 10 MB`}
             aria-label="Doküman ekle"
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-teal-700"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-teal-700 sm:size-11"
           >
             <Paperclip className="size-5" />
           </button>
@@ -193,6 +194,10 @@ export function MessageComposer({
             }}
             className="sr-only"
             tabIndex={-1}
+          />
+          <EmojiButton
+            className="size-9 sm:size-11"
+            onSelect={(emoji) => insertAtCursor(textRef.current, content, emoji, setContent)}
           />
           <label htmlFor="general-message" className="sr-only">
             Mesaj
@@ -210,20 +215,20 @@ export function MessageComposer({
               }
             }}
             rows={1}
-            placeholder="Ekibe bir mesaj yazın… (link, kod ve doküman paylaşabilirsiniz)"
-            className="max-h-48 min-h-9 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-2.5 text-[13.5px] text-slate-900 outline-none [field-sizing:content] placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+            placeholder="Ekibe bir mesaj yazın…"
+            className="max-h-48 min-h-9 min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 sm:px-4 text-[13.5px] text-slate-900 outline-none [field-sizing:content] placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
           />
           <button
             type="submit"
             disabled={pending || (!content.trim() && files.length === 0)}
             aria-label="Gönder"
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#46bba2] to-[#2a8577] text-white shadow-[0_6px_16px_-6px_rgba(42,133,119,0.6)] transition hover:brightness-105 disabled:opacity-50"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br sm:size-11 from-[#46bba2] to-[#2a8577] text-white shadow-[0_6px_16px_-6px_rgba(42,133,119,0.6)] transition hover:brightness-105 disabled:opacity-50"
           >
             <SendHorizontal className="size-5" strokeWidth={2.4} />
           </button>
         </div>
-        <p className="mt-1.5 pl-[52px] text-xs text-slate-400">
-          Enter ile gönder · Shift + Enter yeni satır · Markdown ve ```kod``` desteklenir
+        <p className="mt-1.5 pl-1 text-xs text-slate-400 sm:pl-[104px]">
+          Enter ile gönder · Shift + Enter yeni satır · link, doküman, Markdown ve ```kod```
         </p>
 
         {errors.length > 0 && (

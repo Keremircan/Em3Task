@@ -7,6 +7,8 @@ import { DayFilter } from "@/components/conversation/day-filter";
 import { deleteComment } from "@/actions/task-details";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { CommentThread } from "./comment-form";
+import { Reactable } from "@/components/chat/reactions";
+import { groupReactions, type ReactionRow } from "@/lib/reactions";
 
 export type TaskComment = {
   id: string;
@@ -14,6 +16,7 @@ export type TaskComment = {
   content: string;
   created_at: string;
   author: { full_name: string | null; avatar_url?: string | null } | null;
+  reactions?: ReactionRow[];
 };
 
 export function TaskComments({
@@ -99,9 +102,16 @@ export function TaskComments({
                     </span>
                   )}
                 </div>
-                <div className="mt-1.5 rounded-xl rounded-tl-md bg-slate-50 px-4 py-2">
-                  <Markdown>{comment.content}</Markdown>
-                </div>
+                <Reactable
+                  target="comment"
+                  messageId={comment.id}
+                  reactions={groupReactions(comment.reactions)}
+                  me={{ id: currentUserId, name: currentUserName }}
+                >
+                  <div className="mt-1.5 rounded-xl rounded-tl-md bg-slate-50 px-4 py-2">
+                    <Markdown>{comment.content}</Markdown>
+                  </div>
+                </Reactable>
               </div>
             </li>
           );

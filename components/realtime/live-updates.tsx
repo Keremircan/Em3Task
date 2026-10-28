@@ -17,6 +17,7 @@ const TABLES = [
   "general_messages",
   "general_files",
   "removed_links",
+  "message_reactions",
 ] as const;
 
 // Art arda gelen olayları tek yenilemede toplamak için bekleme süresi

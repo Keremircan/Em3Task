@@ -7,6 +7,7 @@ import { addComment } from "@/actions/task-details";
 import { Avatar } from "@/components/ui/avatar";
 import { field, primaryButton } from "@/components/ui/styles";
 import { safe } from "@/lib/safe-action";
+import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
 
 type PendingComment = { key: string; text: string };
 
@@ -133,9 +134,15 @@ export function CommentThread({
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-slate-400">
-            Enter ile gönder · Shift + Enter yeni satır · Markdown desteklenir
-          </p>
+          <div className="flex items-center gap-2">
+            <EmojiButton
+              className="size-9"
+              onSelect={(emoji) => insertAtCursor(textareaRef.current, content, emoji, setContent)}
+            />
+            <p className="text-xs text-slate-400">
+              Enter ile gönder · Shift + Enter yeni satır · Markdown desteklenir
+            </p>
+          </div>
           <button type="submit" disabled={!content.trim()} className={primaryButton}>
             <SendHorizontal className="size-4" strokeWidth={2.2} />
             Gönder

@@ -98,6 +98,16 @@ export type RemovedLink = {
   created_at: string;
 };
 
+// Mesaj tepkileri: Genel mesajına (message_id) ya da görev yorumuna (comment_id) emoji
+export type MessageReaction = {
+  id: string;
+  message_id: string | null;
+  comment_id: string | null;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+};
+
 // Etkinlik akışı: sadece veritabanı tetikleyicileri yazar, herkes okur
 export type ActivityAction =
   | "task_created"
@@ -234,6 +244,15 @@ export type Database = {
         [
           Rel<"member_roles_profile_id_fkey", "profile_id", "profiles">,
           Rel<"member_roles_role_id_fkey", "role_id", "roles">,
+        ]
+      >;
+      message_reactions: Table<
+        MessageReaction,
+        Pick<MessageReaction, "emoji"> & Partial<Omit<MessageReaction, "emoji">>,
+        [
+          Rel<"message_reactions_message_id_fkey", "message_id", "general_messages">,
+          Rel<"message_reactions_comment_id_fkey", "comment_id", "task_comments">,
+          Rel<"message_reactions_user_id_fkey", "user_id", "profiles">,
         ]
       >;
       general_messages: Table<

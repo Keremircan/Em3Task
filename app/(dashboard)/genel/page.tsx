@@ -9,6 +9,8 @@ import { parseDayParam, todayKey } from "@/lib/days";
 import { kindOfMime } from "@/lib/general-files";
 import { Markdown } from "@/components/markdown/markdown";
 import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
+import { Reactable } from "@/components/chat/reactions";
+import { groupReactions, REACTIONS_SELECT } from "@/lib/reactions";
 import { card } from "@/components/ui/styles";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { ChatScroller } from "@/components/general/chat-scroller";
@@ -57,7 +59,11 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
     searchParams,
     supabase
       .from("general_messages")
-      .select("id, user_id, content, created_at, author:profiles!general_messages_user_id_fkey(full_name, avatar_url)")
+      .select(
+        `id, user_id, content, created_at,
+         author:profiles!general_messages_user_id_fkey(full_name, avatar_url),
+         ${REACTIONS_SELECT}`,
+      )
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT),
     supabase
@@ -134,8 +140,8 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
         <ChatScroller messageCount={messages.length}>
           {setupMissing ? (
             <p className="rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-800">
-              Genel sayfası için veritabanı kurulumu eksik: supabase/genel.sql dosyasını
-              Supabase SQL Editor&apos;de çalıştırın.
+              Genel sayfası için veritabanı kurulumu eksik: supabase/genel.sql dosyasını Supabase
+              SQL Editor&apos;de çalıştırın.
             </p>
           ) : messages.length === 0 && selectedDay ? (
             <div className="flex h-full flex-col items-center justify-center text-center text-slate-500">
@@ -154,7 +160,9 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                 <MessagesSquare className="size-6" />
               </div>
               <p className="mt-4 font-bold text-slate-900">Sohbet henüz sessiz</p>
-              <p className="mt-1 text-sm">İlk mesajı yazın; link ve doküman da paylaşabilirsiniz.</p>
+              <p className="mt-1 text-sm">
+                İlk mesajı yazın; link ve doküman da paylaşabilirsiniz.
+              </p>
             </div>
           ) : (
             <ol className="space-y-1">
@@ -177,25 +185,40 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                         <span className="h-px flex-1 bg-slate-100" />
                       </div>
                     )}
-                    <div className={`group flex gap-3 rounded-xl px-2 py-1 hover:bg-slate-50/80 ${grouped ? "" : "mt-3"}`}>
+                    <div
+                      className={`group flex gap-3 rounded-xl px-2 py-1 hover:bg-slate-50/80 ${grouped ? "" : "mt-3"}`}
+                    >
                       <div className="w-8 shrink-0">
-                        {!grouped && <ZoomableAvatar name={name} src={m.author?.avatar_url} size="sm" />}
+                        {!grouped && (
+                          <ZoomableAvatar name={name} src={m.author?.avatar_url} size="sm" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         {!grouped && (
                           <p className="flex items-baseline gap-2">
                             <span className="text-[13px] font-bold text-slate-900">{name}</span>
-                            <time dateTime={m.created_at} title={formatDateTime(m.created_at)} className="text-xs text-slate-400">
+                            <time
+                              dateTime={m.created_at}
+                              title={formatDateTime(m.created_at)}
+                              className="text-xs text-slate-400"
+                            >
                               {formatTime(m.created_at)}
                             </time>
                           </p>
                         )}
-                        {m.content && (
-                          <div className="text-sm [&_.markdown]:text-sm">
-                            <Markdown>{m.content}</Markdown>
-                          </div>
-                        )}
-                        {attached.length > 0 && <MessageFiles files={attached} />}
+                        <Reactable
+                          target="general"
+                          messageId={m.id}
+                          reactions={groupReactions(m.reactions)}
+                          me={{ id: user.id, name: user.name }}
+                        >
+                          {m.content && (
+                            <div className="text-sm [&_.markdown]:text-sm">
+                              <Markdown>{m.content}</Markdown>
+                            </div>
+                          )}
+                          {attached.length > 0 && <MessageFiles files={attached} />}
+                        </Reactable>
                       </div>
                       {canDelete(m.user_id) && (
                         <div className="shrink-0 self-start">
@@ -254,7 +277,12 @@ function MessageFiles({ files }: { files: GeneralDocument[] }) {
               className="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- süreli Storage linki */}
-              <img src={viewUrl(f.id)} alt={f.file_name} loading="lazy" className="max-h-56 max-w-72 object-cover" />
+              <img
+                src={viewUrl(f.id)}
+                alt={f.file_name}
+                loading="lazy"
+                className="max-h-56 max-w-72 object-cover"
+              />
             </a>
           );
         }
@@ -279,7 +307,9 @@ function MessageFiles({ files }: { files: GeneralDocument[] }) {
 function GeneralSkeleton() {
   return (
     <div className="grid grid-cols-1 animate-pulse gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className={`${card} h-[calc(100dvh-19rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[420px] lg:h-[calc(100dvh-14rem)] lg:min-h-[460px]`} />
+      <div
+        className={`${card} h-[calc(100dvh-19rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[420px] lg:h-[calc(100dvh-14rem)] lg:min-h-[460px]`}
+      />
       <div className="space-y-4">
         <div className={`${card} h-40`} />
         <div className={`${card} h-40`} />
