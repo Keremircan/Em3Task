@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CircleAlert, CircleCheck, LoaderCircle, Save } from "lucide-react";
 import { updateAccount } from "@/actions/profile";
 import { field, fieldLabel, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 // Ad soyad ve e-posta. E-posta değişirse mevcut şifre istenir.
 export function AccountForm({ name, email }: { name: string; email: string }) {
@@ -29,7 +30,7 @@ export function AccountForm({ name, email }: { name: string; email: string }) {
         if (emailChanged && !password) return setError("E-postayı değiştirmek için mevcut şifrenizi girin.");
 
         setBusy(true);
-        const result = await updateAccount({ fullName, email: mail, currentPassword: password });
+        const result = await safe(updateAccount({ fullName, email: mail, currentPassword: password }));
         setBusy(false);
         if (result.error) return setError(result.error);
         setPassword("");

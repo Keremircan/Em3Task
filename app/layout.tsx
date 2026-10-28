@@ -8,9 +8,11 @@ const dmSans = DM_Sans({
   subsets: ["latin", "latin-ext"],
 });
 
+// Sadece kod bloklarında kullanılır: her sayfada önceden indirilmesin
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

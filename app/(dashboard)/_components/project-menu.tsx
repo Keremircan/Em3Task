@@ -8,6 +8,7 @@ import type { ProjectSummary } from "@/lib/projects";
 import { Menu } from "@/components/ui/menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NewProjectDialog } from "./new-project-dialog";
+import { safe } from "@/lib/safe-action";
 
 export function ProjectMenu({
   project,
@@ -53,7 +54,7 @@ export function ProjectMenu({
         message={`"${project.name}" projesi silinecek. İçinde görev olan projeler silinemez; önce görevleri silin.`}
         confirmLabel="Projeyi sil"
         onConfirm={async () => {
-          const result = await deleteProject(project.id);
+          const result = await safe(deleteProject(project.id));
           if (!result.error && isCurrent) router.push("/");
           return result;
         }}

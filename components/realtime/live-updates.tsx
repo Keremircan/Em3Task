@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 // Değişiklikleri dinlenen tablolar (supabase/realtime.sql + genel.sql)
 const TABLES = [
@@ -20,6 +21,8 @@ const TABLES = [
 
 // Art arda gelen olayları tek yenilemede toplamak için bekleme süresi
 const REFRESH_DELAY_MS = 250;
+// Veri bu kadar yeniyse (sayfa az önce sunucudan geldiyse) yenileme gereksiz
+const FRESH_MS = 10_000;
 
 type Status = "connecting" | "live" | "offline";
 
@@ -40,17 +43,34 @@ export function LiveUpdates() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
+    // Sayfa sunucudan az önce geldi: veriler taze
+    let lastFresh = Date.now();
 
-    const scheduleRefresh = () => {
+    const refreshNow = () => {
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => router.refresh(), REFRESH_DELAY_MS);
+      timer.current = setTimeout(() => {
+        lastFresh = Date.now();
+        router.refresh();
+      }, REFRESH_DELAY_MS);
+    };
+    // Uygulama açılışında da tetiklenen olaylar (focus, görünür olma, ilk
+    // bağlantı) taze sayfayı ikinci kez çizdirmesin
+    const scheduleRefresh = () => {
+      if (Date.now() - lastFresh < FRESH_MS) return;
+      refreshNow();
     };
 
     let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let supabase: SupabaseClient<Database> | null = null;
+    let channel: RealtimeChannel | null = null;
 
     async function connect() {
+      // Supabase tarayıcı kütüphanesi büyüktür (~250 KB); sayfanın ilk açılışını
+      // yavaşlatmasın diye sayfa çizildikten sonra ayrı olarak yüklenir
+      const { createClient } = await import("@/utils/supabase/client");
+      if (cancelled) return;
+      supabase = createClient();
+
       // Önce oturum token'ını Realtime'a ver: token'sız kanal RLS yüzünden
       // hiçbir değişikliği alamaz (abone görünür ama olay gelmez).
       const { data } = await supabase.auth.getSession();
@@ -73,7 +93,7 @@ export function LiveUpdates() {
             // yeniledi. İkinci bir yenileme hem gereksiz hem de Next.js'in tek
             // sıra halinde çalışan işlem kuyruğunu yavaşlatır.
             if (payload.eventType !== "DELETE" && isMine(payload.new, myId)) return;
-            scheduleRefresh();
+            refreshNow(); // ekipten gelen gerçek değişiklik: her zaman yenile
           },
         );
       }
@@ -82,6 +102,7 @@ export function LiveUpdates() {
           setStatus("live");
           // Bağlantı kurulana (ya da koptuktan sonra yeniden kurulana) kadar
           // kaçmış olabilecek değişiklikleri almak için bir kez yenile
+          // (sayfa az önce açıldıysa veri zaten taze; yenilenmez)
           scheduleRefresh();
         }
         else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT" || state === "CLOSED") {
@@ -90,7 +111,11 @@ export function LiveUpdates() {
       });
       channel = ch;
     }
-    connect();
+    // Bağlantıyı tarayıcı boşa çıkınca kur: sayfanın çizilmesiyle yarışmasın
+    const hasIdle = typeof window.requestIdleCallback === "function"; // Safari'de yok
+    const idle = hasIdle
+      ? window.requestIdleCallback(() => connect(), { timeout: 2000 })
+      : window.setTimeout(() => connect(), 300);
 
     // Sekme uykudayken (tarayıcı arka plan sekmelerini yavaşlatır) kaçan
     // değişiklikler için sekmeye/pencereye dönüşte bir kez yenile
@@ -107,7 +132,9 @@ export function LiveUpdates() {
       window.removeEventListener("focus", scheduleRefresh);
       window.removeEventListener("online", scheduleRefresh);
       cancelled = true;
-      if (channel) supabase.removeChannel(channel);
+      if (hasIdle) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+      if (channel && supabase) supabase.removeChannel(channel);
     };
   }, [router]);
 

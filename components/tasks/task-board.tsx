@@ -10,6 +10,7 @@ import { BOARD_COLUMNS, canRequestRevision, STATUS_DOTS } from "@/lib/tasks";
 import { PriorityBadge } from "./priority";
 import { RevisionBadge, RevisionDialog } from "./revision";
 import { OptimisticTasksProvider, useOptimisticTasks, useShownTasks } from "./optimistic-tasks";
+import { safe } from "@/lib/safe-action";
 
 export type BoardTask = {
   id: string;
@@ -123,7 +124,7 @@ function CardRevisionButton({ task }: { task: BoardTask }) {
           startTransition(async () => {
             // Kart hemen "Yapılıyor" sütununa geçer; hata olursa geri döner
             optimistic?.apply({ type: "status", id: task.id, status: "in_progress" });
-            const result = await requestRevision(task.id, note);
+            const result = await safe(requestRevision(task.id, note));
             if (result.error) optimistic?.report(result.error);
           })
         }

@@ -16,6 +16,7 @@ import { PrioritySelect } from "./priority-select";
 import { Modal } from "@/components/ui/modal";
 import { SelectField } from "@/components/ui/select-field";
 import { field, fieldLabel, ghostButton, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 export type TaskFormOptions = {
   projects: { id: string; name: string }[];
@@ -83,10 +84,10 @@ export function TaskFormDialog({
       let taskId = task?.id ?? null;
 
       if (task) {
-        const result = await updateTask(task.id, formData);
+        const result = await safe(updateTask(task.id, formData));
         if (result.error) return setError(result.error);
       } else {
-        const result = await createTask(formData);
+        const result = await safe(createTask(formData));
         if (result.error || !result.taskId) {
           return setError(result.error ?? "Görev kaydedilemedi.");
         }
@@ -99,7 +100,7 @@ export function TaskFormDialog({
         setProgress(`Dosyalar yükleniyor (${i + 1}/${files.length})…`);
         const fd = new FormData();
         fd.append("file", file);
-        const result = await uploadAttachment(taskId!, fd);
+        const result = await safe(uploadAttachment(taskId!, fd));
         if (result.error) failed.push(`${file.name}: ${result.error}`);
       }
       setProgress(null);

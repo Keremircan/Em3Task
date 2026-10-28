@@ -5,6 +5,7 @@ import { Check, Tag } from "lucide-react";
 import { setMemberRole } from "@/actions/roles";
 import { Modal } from "@/components/ui/modal";
 import { ghostButton, smallGhostButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 // Admin: bir üyeye birden fazla rol verip geri alabilir
 export function MemberRolesEditor({
@@ -35,7 +36,7 @@ export function MemberRolesEditor({
       else copy.delete(roleId);
       return copy;
     });
-    const result = await setMemberRole(memberId, roleId, next);
+    const result = await safe(setMemberRole(memberId, roleId, next));
     setPendingIds((prev) => {
       const copy = new Set(prev);
       copy.delete(roleId);

@@ -26,6 +26,7 @@ import { card, field, primaryButton } from "@/components/ui/styles";
 import { SelectField } from "@/components/ui/select-field";
 import { Menu } from "@/components/ui/menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { safe } from "@/lib/safe-action";
 
 type Todo = Pick<PersonalTodo, "id" | "title" | "category" | "is_completed" | "created_at">;
 
@@ -71,7 +72,7 @@ export function TodoBoard({ todos, projectNames }: { todos: Todo[]; projectNames
     setError(null);
     startTransition(async () => {
       apply(op);
-      const result = await action();
+      const result = await safe(action());
       if (result.error) setError(result.error);
     });
   };

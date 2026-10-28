@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Bell, CalendarDays, CircleCheck, IdCard, KeyRound } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserId } from "@/lib/auth";
 import { card } from "@/components/ui/styles";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { NotificationSettings } from "@/components/profile/notification-settings";
@@ -35,17 +35,19 @@ const dateFormat = new Intl.DateTimeFormat("tr-TR", {
 });
 
 async function Profile() {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
+  // Kimlik yerelde okunur (Supabase isteği yok); kullanıcı bilgisi ve sayfa
+  // sorguları aynı turda, paralel gider
+  const [userId, supabase] = await Promise.all([getUserId(), createClient()]);
 
   // Tamamladığı görevler: sorumlusu olduğu ve "Tamamlandı" durumundaki görevler
-  const [{ count: completed }, { data: profile }] = await Promise.all([
+  const [user, { count: completed }, { data: profile }] = await Promise.all([
+    getCurrentUser(),
     supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
-      .eq("assigned_to", user.id)
+      .eq("assigned_to", userId)
       .eq("status", "done"),
-    supabase.from("profiles").select("created_at").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("created_at").eq("id", userId).maybeSingle(),
   ]);
 
   return (

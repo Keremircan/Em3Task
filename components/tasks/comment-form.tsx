@@ -6,6 +6,7 @@ import { CircleAlert, SendHorizontal, X } from "lucide-react";
 import { addComment } from "@/actions/task-details";
 import { Avatar } from "@/components/ui/avatar";
 import { field, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 type PendingComment = { key: string; text: string };
 
@@ -48,7 +49,7 @@ export function CommentThread({
 
     startTransition(async () => {
       addPending({ key: crypto.randomUUID(), text });
-      const result = await addComment(taskId, text);
+      const result = await safe(addComment(taskId, text));
       if (result.error) {
         setError(result.error);
         // Kutuya bu arada yeni bir şey yazılmadıysa metni geri koy

@@ -7,6 +7,7 @@ import { MAX_PROJECT_URL, parseProjectUrl } from "@/lib/project-url";
 import { createProject, renameProject } from "@/actions/projects";
 import { Modal } from "@/components/ui/modal";
 import { field, fieldLabel, ghostButton, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 // Yeni proje oluşturma ve mevcut projeyi düzenleme (ad + isteğe bağlı link) penceresi.
 // onCreate verilirse oluşturma iyimserdir: pencere hemen kapanır, kaydı çağıran taraf yapar.
@@ -65,8 +66,8 @@ export function NewProjectDialog({
           }
           startTransition(async () => {
             const result = project
-              ? await renameProject(project.id, name, link)
-              : await createProject(name, undefined, link);
+              ? await safe(renameProject(project.id, name, link))
+              : await safe(createProject(name, undefined, link));
             if (result.error) {
               setError(result.error);
               return;

@@ -26,6 +26,7 @@ import {
 } from "./task-form-dialog";
 import { useOptimisticTasks, type TaskUpdate } from "./optimistic-tasks";
 import { RevisionDialog } from "./revision";
+import { safe } from "@/lib/safe-action";
 
 export type ActionTask = EditableTask & {
   status: TaskStatus;
@@ -82,7 +83,7 @@ export function TaskActions({
     setError(null);
     startTransition(async () => {
       optimistic?.apply(update);
-      const result = await action(task.id);
+      const result = await safe(action(task.id));
       if (result.error) {
         if (optimistic) optimistic.report(result.error);
         else setError(result.error);

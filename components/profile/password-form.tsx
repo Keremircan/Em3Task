@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CircleAlert, CircleCheck, Eye, EyeOff, KeyRound, LoaderCircle } from "lucide-react";
 import { changePassword } from "@/actions/profile";
 import { field, fieldLabel, ghostButton, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 function PasswordInput({
   id,
@@ -88,7 +89,7 @@ export function PasswordForm() {
         if (next !== repeat) return setError("Yeni şifreler birbiriyle aynı değil.");
 
         setBusy(true);
-        const result = await changePassword(current, next);
+        const result = await safe(changePassword(current, next));
         setBusy(false);
         if (result.error) return setError(result.error);
         form.reset();

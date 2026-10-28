@@ -20,6 +20,7 @@ import { createProject } from "@/actions/projects";
 import { parseProjectUrl } from "@/lib/project-url";
 import { NewProjectDialog } from "./new-project-dialog";
 import { ProjectMenu } from "./project-menu";
+import { safe } from "@/lib/safe-action";
 
 const MAIN_LINKS = [
   { href: "/", label: "Ana sayfa", icon: House },
@@ -79,7 +80,7 @@ export function SidebarNavList({
         url: "url" in url ? url.url : null,
         created_by: userId,
       });
-      const result = await createProject(name, id, link);
+      const result = await safe(createProject(name, id, link));
       if (result.error) {
         setRetry({ key: Date.now(), name, link, error: result.error });
         setCreating(true);

@@ -18,6 +18,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { formatBytes } from "@/lib/attachments";
 import { Avatar } from "@/components/ui/avatar";
+import { safe } from "@/lib/safe-action";
 
 type Sending = { text: string; files: string[]; progress: string | null };
 
@@ -101,9 +102,9 @@ export function MessageComposer({
       }
 
       // 2) Mesaj ve dosya kayıtları tek istekte kaydedilir
-      const result = await sendGeneralMessage(text, uploaded);
+      const result = await safe(sendGeneralMessage(text, uploaded));
       if (result.error) {
-        await discardGeneralUploads(uploaded.map((u) => u.path));
+        await safe(discardGeneralUploads(uploaded.map((u) => u.path)));
         setErrors([result.error, ...failed]);
         setContent(text);
         setFiles(toUpload);

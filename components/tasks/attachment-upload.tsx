@@ -8,6 +8,7 @@ import {
   ATTACHMENT_ACCEPT,
   MAX_ATTACHMENT_BYTES,
 } from "@/lib/attachments";
+import { safe } from "@/lib/safe-action";
 
 export function AttachmentUpload({ taskId }: { taskId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +46,7 @@ export function AttachmentUpload({ taskId }: { taskId: string }) {
         );
         const fd = new FormData();
         fd.append("file", file);
-        const result = await uploadAttachment(taskId, fd);
+        const result = await safe(uploadAttachment(taskId, fd));
         if (result.error) {
           setErrors((prev) => [...prev, `${file.name}: ${result.error}`]);
         }

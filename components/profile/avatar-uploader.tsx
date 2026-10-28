@@ -8,6 +8,7 @@ import { setAvatar } from "@/actions/profile";
 import { Avatar } from "@/components/ui/avatar";
 import { smallDangerButton, smallGhostButton } from "@/components/ui/styles";
 import { AVATARS_BUCKET, AVATAR_SIZE, MAX_AVATAR_SOURCE_BYTES } from "@/lib/avatars";
+import { safe } from "@/lib/safe-action";
 
 // Seçilen resmi ortadan kare kırpıp 256 px'e küçültür (hızlı yükleme, küçük dosya).
 // Tarayıcı WebP üretemiyorsa (eski Safari) JPEG'e düşer.
@@ -76,7 +77,7 @@ export function AvatarUploader({
         .upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: "31536000" });
       if (uploadError) throw new Error("upload");
 
-      const result = await setAvatar(path);
+      const result = await safe(setAvatar(path));
       if (result.error) throw new Error(result.error);
       // Geçici önizlemeden kalıcı adrese geç (önizleme adresi birazdan silinir)
       setPreview(result.url ?? undefined);
@@ -99,7 +100,7 @@ export function AvatarUploader({
     setError(null);
     setBusy(true);
     setPreview(null);
-    const result = await setAvatar(null);
+    const result = await safe(setAvatar(null));
     if (result.error) {
       setPreview(undefined);
       setError(result.error);

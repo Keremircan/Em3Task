@@ -29,10 +29,13 @@ export function PresencePing() {
       touchLastSeen().catch(() => {});
     }
 
-    ping();
+    // İlk kayıt birkaç saniye sonra: Next.js sunucu işlemlerini sırayla
+    // çalıştırır, açılışta kullanıcının ilk tıklamasının önüne geçmesin
+    const first = setTimeout(ping, 4000);
     document.addEventListener("visibilitychange", ping);
     const timer = setInterval(ping, EVERY_MS);
     return () => {
+      clearTimeout(first);
       document.removeEventListener("visibilitychange", ping);
       clearInterval(timer);
     };

@@ -5,6 +5,7 @@ import { CircleAlert, Plus, Trash } from "lucide-react";
 import { createRole, deleteRole } from "@/actions/roles";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { field } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 export function CreateRoleForm() {
   const [pending, startTransition] = useTransition();
@@ -18,7 +19,7 @@ export function CreateRoleForm() {
         const name = inputRef.current?.value ?? "";
         setError(null);
         startTransition(async () => {
-          const result = await createRole(name);
+          const result = await safe(createRole(name));
           if (result.error) setError(result.error);
           else if (inputRef.current) inputRef.current.value = "";
         });

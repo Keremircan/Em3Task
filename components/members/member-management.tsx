@@ -14,6 +14,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { field, fieldLabel, ghostButton, primaryButton } from "@/components/ui/styles";
+import { safe } from "@/lib/safe-action";
 
 // Üye ekleme/çıkarma: işlem ekrana hemen yansır (useOptimistic), hesap sunucuda
 // service role ile oluşturulur/silinir. Hata olursa liste eski haline döner.
@@ -43,7 +44,7 @@ export function MembersProvider({ children }: { children: ReactNode }) {
     setError(null);
     startTransition(async () => {
       apply(op);
-      const result = await action();
+      const result = await safe(action());
       if (result.error) setError(result.error);
     });
   };
@@ -282,7 +283,7 @@ export function MemberPermissionToggle({ allowAll }: { allowAll: boolean }) {
     setError(null);
     startTransition(async () => {
       setOptimistic(next);
-      const result = await setMemberManagementPermission(next);
+      const result = await safe(setMemberManagementPermission(next));
       if (result.error) setError(result.error);
     });
   }
