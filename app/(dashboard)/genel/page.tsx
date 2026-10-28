@@ -14,7 +14,8 @@ import { groupReactions, REACTIONS_SELECT } from "@/lib/reactions";
 import { card } from "@/components/ui/styles";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { ChatScroller } from "@/components/general/chat-scroller";
-import { MessageComposer } from "@/components/general/message-composer";
+import { MessageComposer, PrivateTag } from "@/components/general/message-composer";
+import { getTeamMembers } from "@/lib/team";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { DayFilter } from "@/components/conversation/day-filter";
 import { deleteGeneralMessage } from "@/actions/general";
@@ -54,14 +55,17 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
   const supabase = await createClient();
 
   // Kullanıcı, mesajlar, dokümanlar ve kaldırılan linkler aynı turda, paralel
-  const [user, { gun }, messagesRes, filesRes, removedRes] = await Promise.all([
+  // Veritabanı kuralları (RLS) sadece görebileceğimiz mesajları döndürür:
+  // herkese açık olanlar, gönderdiğimiz ve bize gelen özel mesajlar
+  const [user, { gun }, messagesRes, filesRes, removedRes, team] = await Promise.all([
     getCurrentUser(),
     searchParams,
     supabase
       .from("general_messages")
       .select(
-        `id, user_id, content, created_at,
+        `id, user_id, receiver_id, content, created_at,
          author:profiles!general_messages_user_id_fkey(full_name, avatar_url),
+         receiver:profiles!general_messages_receiver_id_fkey(full_name),
          ${REACTIONS_SELECT}`,
       )
       .order("created_at", { ascending: false })
@@ -73,6 +77,7 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
       )
       .order("created_at", { ascending: false }),
     supabase.from("removed_links").select("url, created_at").eq("scope", GENERAL_LINK_SCOPE),
+    getTeamMembers(),
   ]);
 
   const setupMissing = Boolean(messagesRes.error || filesRes.error);
@@ -169,8 +174,12 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
               {messages.map((m, i) => {
                 const prev = messages[i - 1];
                 const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at);
+                // Özel mesajlar gruplanmaz: gizlilik etiketi her mesajda görünsün
+                const isPrivate = m.receiver_id !== null;
                 const grouped =
                   !newDay &&
+                  !isPrivate &&
+                  prev.receiver_id === null &&
                   prev.user_id === m.user_id &&
                   new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() <
                     GROUP_WINDOW_MS;
@@ -186,7 +195,11 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                       </div>
                     )}
                     <div
-                      className={`group flex gap-3 rounded-xl px-2 py-1 hover:bg-slate-50/80 ${grouped ? "" : "mt-3"}`}
+                      className={`group flex gap-3 rounded-xl px-2 py-1 ${grouped ? "" : "mt-3"} ${
+                        isPrivate
+                          ? "bg-amber-50/50 ring-1 ring-amber-100 hover:bg-amber-50/80"
+                          : "hover:bg-slate-50/80"
+                      }`}
                     >
                       <div className="w-8 shrink-0">
                         {!grouped && (
@@ -195,8 +208,17 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                       </div>
                       <div className="min-w-0 flex-1">
                         {!grouped && (
-                          <p className="flex items-baseline gap-2">
+                          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                             <span className="text-[13px] font-bold text-slate-900">{name}</span>
+                            {isPrivate && (
+                              <PrivateTag
+                                other={
+                                  m.user_id === user.id
+                                    ? (m.receiver?.full_name ?? "Eski üye")
+                                    : name
+                                }
+                              />
+                            )}
                             <time
                               dateTime={m.created_at}
                               title={formatDateTime(m.created_at)}
@@ -242,6 +264,7 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
         </ChatScroller>
         <MessageComposer
           authorName={user.name}
+          members={team.filter((t) => t.id !== user.id)}
           viewingPastDay={selectedDay !== null && selectedDay !== today}
         />
       </section>

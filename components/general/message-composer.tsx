@@ -2,12 +2,17 @@
 
 import { useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleAlert, LoaderCircle, Paperclip, SendHorizontal, X } from "lucide-react";
 import {
-  discardGeneralUploads,
-  sendGeneralMessage,
-  type UploadedFile,
-} from "@/actions/general";
+  ChevronDown,
+  CircleAlert,
+  LoaderCircle,
+  Lock,
+  Paperclip,
+  SendHorizontal,
+  Users,
+  X,
+} from "lucide-react";
+import { discardGeneralUploads, sendGeneralMessage, type UploadedFile } from "@/actions/general";
 import {
   GENERAL_ACCEPT,
   GENERAL_BUCKET,
@@ -21,15 +26,29 @@ import { Avatar } from "@/components/ui/avatar";
 import { safe } from "@/lib/safe-action";
 import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
 
-type Sending = { text: string; files: string[]; progress: string | null };
+type Sending = {
+  text: string;
+  files: string[];
+  progress: string | null;
+  receiver: Member | null;
+};
+type Member = { id: string; name: string };
+
+const firstName = (name: string) => name.split(" ")[0] || name;
 
 export function MessageComposer({
   authorName,
+  members,
   viewingPastDay = false,
 }: {
   authorName: string;
+  members: Member[]; // alıcı seçici için ekip (kendisi hariç)
   viewingPastDay?: boolean; // geçmiş bir gün süzülüyse yeni mesaj görünmez
 }) {
+  // Alıcı: varsayılan herkes. Seçim gönderimden sonra da kalır (aynı kişiyle
+  // yazışmaya devam edilebilsin); kutunun üstündeki rozet her zaman gösterir.
+  const [receiverId, setReceiverId] = useState<string>("");
+  const receiver = members.find((m) => m.id === receiverId) ?? null;
   const router = useRouter();
   const pathname = usePathname();
   const [content, setContent] = useState("");
@@ -65,7 +84,8 @@ export function MessageComposer({
 
     setErrors([]);
     // İyimser güncelleme: mesaj sunucuyu beklemeden ekranda görünür
-    setSending({ text, files: toUpload.map((f) => f.name), progress: null });
+    const to = receiver;
+    setSending({ text, files: toUpload.map((f) => f.name), progress: null, receiver: to });
     setContent("");
     setFiles([]);
     requestAnimationFrame(() => window.dispatchEvent(new Event("cotask:chat-sent")));
@@ -103,7 +123,7 @@ export function MessageComposer({
       }
 
       // 2) Mesaj ve dosya kayıtları tek istekte kaydedilir
-      const result = await safe(sendGeneralMessage(text, uploaded));
+      const result = await safe(sendGeneralMessage(text, uploaded, to?.id ?? null));
       if (result.error) {
         await safe(discardGeneralUploads(uploaded.map((u) => u.path)));
         setErrors([result.error, ...failed]);
@@ -127,8 +147,9 @@ export function MessageComposer({
         <div className="flex gap-3 px-4 pb-3 opacity-70 sm:px-4" aria-live="polite">
           <Avatar name={authorName} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1.5 text-xs text-slate-400">
+            <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
               <span className="font-bold text-slate-700">{authorName}</span>
+              {sending.receiver && <PrivateTag other={sending.receiver.name} />}
               <LoaderCircle className="size-3.5 animate-spin" />
               {sending.progress ?? "Gönderiliyor…"}
             </p>
@@ -151,6 +172,54 @@ export function MessageComposer({
         }}
         className="border-t border-slate-100 p-3 sm:p-4"
       >
+        {/* Kime: varsayılan herkes; bir üye seçilirse özel mesaj */}
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <label htmlFor="general-receiver" className="text-xs font-semibold text-slate-500">
+            Kime
+          </label>
+          <div className="relative">
+            {receiver ? (
+              <Lock
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-amber-600"
+              />
+            ) : (
+              <Users
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-teal-600"
+              />
+            )}
+            <select
+              id="general-receiver"
+              value={receiverId}
+              onChange={(e) => setReceiverId(e.target.value)}
+              className={`h-8 max-w-[14rem] appearance-none truncate rounded-full border py-0 pr-8 pl-8 text-[13px] font-semibold outline-none transition focus:ring-3 ${
+                receiver
+                  ? "border-amber-200 bg-amber-50 text-amber-800 focus:ring-amber-500/15"
+                  : "border-slate-200 bg-white text-slate-700 focus:border-teal-500 focus:ring-teal-500/15"
+              }`}
+            >
+              <option value="">Herkes (Genel)</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-slate-400"
+            />
+          </div>
+          {receiver && (
+            <span
+              role="status"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100/70 px-2.5 py-1 text-xs font-semibold text-amber-800"
+            >
+              🔒 Yalnızca {firstName(receiver.name)} görebilir
+            </span>
+          )}
+        </div>
         {files.length > 0 && (
           <ul className="mb-2.5 flex flex-wrap gap-2">
             {files.map((f, i) => (
@@ -215,7 +284,9 @@ export function MessageComposer({
               }
             }}
             rows={1}
-            placeholder="Ekibe bir mesaj yazın…"
+            placeholder={
+              receiver ? `${firstName(receiver.name)} için özel mesaj…` : "Ekibe bir mesaj yazın…"
+            }
             className="max-h-48 min-h-9 min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 sm:px-4 text-[13.5px] text-slate-900 outline-none [field-sizing:content] placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
           />
           <button
@@ -242,5 +313,14 @@ export function MessageComposer({
         )}
       </form>
     </>
+  );
+}
+
+// Özel mesaj etiketi: "🔒 Yalnızca sen ve Fahrettin"
+export function PrivateTag({ other }: { other: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200/70">
+      <Lock className="size-3" /> Yalnızca sen ve {firstName(other)}
+    </span>
   );
 }

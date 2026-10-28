@@ -73,7 +73,8 @@ export type MemberRole = {
 // "Genel" sayfası: projeden bağımsız ekip sohbeti
 export type GeneralMessage = {
   id: string;
-  user_id: string | null;
+  user_id: string | null; // gönderen
+  receiver_id: string | null; // null: herkese açık; dolu: sadece gönderen ve alıcı görür
   content: string;
   created_at: string;
 };
@@ -258,7 +259,10 @@ export type Database = {
       general_messages: Table<
         GeneralMessage,
         Partial<GeneralMessage>,
-        [Rel<"general_messages_user_id_fkey", "user_id", "profiles">]
+        [
+          Rel<"general_messages_user_id_fkey", "user_id", "profiles">,
+          Rel<"general_messages_receiver_id_fkey", "receiver_id", "profiles">,
+        ]
       >;
       general_files: Table<
         GeneralFile,

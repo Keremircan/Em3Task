@@ -33,15 +33,21 @@ const PATH_RE =
 // Mesajı ve (varsa) dosya kayıtlarını tek seferde kaydeder.
 // Dosyaların kendisi tarayıcıdan depoya paralel yüklenmiş olur: hem hızlı
 // hem de sunucu istek boyutu sınırına (11 MB) takılmaz.
+// receiverId: null → herkese açık; bir üye → sadece gönderen ve o üye görür
+// (gizlilik veritabanı kurallarıyla da korunur).
 export async function sendGeneralMessage(
   content: string,
   files: UploadedFile[],
+  receiverId: string | null = null,
 ): Promise<SendMessageResult> {
   const userId = await getUserId();
   const text = String(content ?? "").trim();
   const list = Array.isArray(files) ? files.slice(0, 20) : [];
 
   if (!text && !list.length) return { error: "Mesaj boş olamaz.", messageId: null };
+  const receiver = receiverId ?? null;
+  if (receiver !== null && !isUuid(receiver)) return { error: "Geçersiz alıcı.", messageId: null };
+  if (receiver === userId) return { error: "Kendinize özel mesaj gönderemezsiniz.", messageId: null };
   if (text.length > MAX_MESSAGE_LENGTH) {
     return { error: "Mesaj çok uzun (en fazla 20.000 karakter).", messageId: null };
   }
@@ -69,12 +75,16 @@ export async function sendGeneralMessage(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("general_messages")
-    .insert({ user_id: userId, content: text })
+    .insert({ user_id: userId, receiver_id: receiver, content: text })
     .select("id")
     .single();
 
   if (error) {
     await removeUploads(supabase, rows.map((r) => r.file_url));
+    // 23503: alıcı bulunamadı (ekipten çıkarılmış olabilir)
+    if (error.code === "23503") {
+      return { error: "Alıcı bulunamadı (ekipten çıkarılmış olabilir).", messageId: null };
+    }
     return { error: "Mesaj gönderilemedi. Lütfen tekrar deneyin.", messageId: null };
   }
 
@@ -90,20 +100,20 @@ export async function sendGeneralMessage(
     }
   }
 
-  // Yazan hariç tüm ekibe haber ver. Etiket sabit: art arda gelen mesajlar
-  // telefonda üst üste yığılmaz, son mesaj bir öncekinin yerine geçer.
+  // Bildirim: herkese açık mesaj yazan hariç tüm ekibe, özel mesaj SADECE alıcıya.
+  // Etiket sabit: art arda gelen mesajlar telefonda üst üste yığılmaz.
   const [user, { data: members }] = await Promise.all([
     getCurrentUser(),
-    supabase.from("profiles").select("id"),
+    receiver ? Promise.resolve({ data: [{ id: receiver }] }) : supabase.from("profiles").select("id"),
   ]);
   const fileNote = rows.length === 1 ? "📎 1 dosya" : `📎 ${rows.length} dosya`;
   notifyUsers(
     (members ?? []).map((m) => m.id),
     {
-      title: `Genel · ${user.name}`,
+      title: receiver ? `🔒 Özel mesaj · ${user.name}` : `Genel · ${user.name}`,
       body: text ? clip(text) : fileNote,
       url: "/genel",
-      tag: "genel",
+      tag: receiver ? `dm-${userId}` : "genel",
     },
     userId,
   );
