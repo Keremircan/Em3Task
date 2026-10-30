@@ -52,7 +52,7 @@ async function Results({ searchParams }: Pick<PageProps<"/ara">, "searchParams">
           required
           autoFocus={!q}
           placeholder="Görev, yorum ya da mesaj ara…"
-          className="h-10 w-full rounded-lg bg-transparent pr-3 pl-9 text-sm outline-none placeholder:text-slate-400"
+          className="h-10 w-full rounded-lg bg-transparent pr-3 pl-9 text-sm text-slate-900 outline-none placeholder:text-slate-400"
         />
       </label>
       <button

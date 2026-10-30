@@ -191,7 +191,7 @@ export function TaskChecklist({
             maxLength={MAX_CHECKLIST_TITLE}
             placeholder={list.length ? "Madde ekle…" : "İlk maddeyi ekleyin (ör. Tasarımı onayla)"}
             aria-label="Yeni madde"
-            className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
+            className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
           />
           <button
             type="submit"
@@ -243,7 +243,7 @@ function EditInput({
           if (e.key === "Escape") onCancel();
         }}
         aria-label="Maddeyi düzenle"
-        className="h-8 min-w-0 flex-1 rounded-md border border-teal-400 px-2 text-sm outline-none focus:ring-3 focus:ring-teal-500/15"
+        className="h-8 min-w-0 flex-1 rounded-md border border-teal-400 bg-white px-2 text-sm text-slate-900 outline-none focus:ring-3 focus:ring-teal-500/15"
       />
       <button type="button" onClick={save} aria-label="Kaydet" className="rounded p-1 text-teal-600 hover:bg-teal-50">
         <Check className="size-4" />

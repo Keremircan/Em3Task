@@ -133,7 +133,7 @@ export function LabelPicker({
                 }}
                 placeholder="Etiket ara ya da oluştur…"
                 aria-label="Etiket ara ya da oluştur"
-                className="h-8 w-full rounded-md border border-slate-200 px-2.5 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
+                className="h-8 w-full rounded-md border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
               />
             </div>
             <ul className="max-h-56 overflow-y-auto p-1 [scrollbar-width:thin]">
@@ -259,7 +259,7 @@ function ManageRow({
           maxLength={MAX_LABEL_NAME}
           onChange={(e) => setName(e.target.value)}
           aria-label="Etiket adı"
-          className="h-8 min-w-0 flex-1 rounded-md border border-slate-200 px-2 text-sm outline-none focus:border-teal-500"
+          className="h-8 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none focus:border-teal-500"
         />
         <button
           type="button"

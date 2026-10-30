@@ -88,7 +88,7 @@ export function BoardFilters({
           value={filters.text}
           onChange={(e) => set({ text: e.target.value })}
           placeholder="Bu panoda ara…"
-          className="h-8 w-44 rounded-lg border border-slate-200 bg-white pr-2.5 pl-8 text-xs outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
+          className="h-8 w-44 rounded-lg border border-slate-200 bg-white pr-2.5 pl-8 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
         />
       </label>
 
