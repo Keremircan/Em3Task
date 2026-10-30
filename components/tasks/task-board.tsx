@@ -84,8 +84,9 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
   const sensors = useSensors(
     // Fare: 6 px hareket edince sürükleme başlar (tıklama bağlantıyı açmaya devam eder)
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    // Dokunma: basılı tutunca başlar; kaydırma ile karışmaz
-    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }),
+    // Dokunma: kısa süre basılı tutunca başlar (parmak 10 px'e kadar kayabilir);
+    // daha hızlı kaydırma hareketi sayfayı/sütunları kaydırmaya devam eder
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 10 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -121,6 +122,8 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
   function onDragStart(e: DragStartEvent) {
     setActiveId(String(e.active.id));
     justDragged.current = true;
+    // Telefonda sürüklemenin başladığını hissettir (destekleyen cihazlarda)
+    navigator.vibrate?.(12);
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -302,7 +305,9 @@ function DraggableCard({
     <li
       ref={setNodeRef}
       onClickCapture={onClickCapture}
-      className={`group/card relative rounded-lg border bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:shadow-md ${
+      // Uzun basma sürükleme içindir: telefonun bağlantı önizlemesi / menüsü açılmasın
+      onContextMenu={(e) => e.preventDefault()}
+      className={`group/card relative rounded-lg border bg-white select-none [-webkit-touch-callout:none] [-webkit-user-select:none] shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:shadow-md ${
         isDragging ? "opacity-40" : ""
       } ${overdue ? "border-rose-200 hover:border-rose-300" : "border-slate-200/60 hover:border-teal-200"}`}
     >
@@ -323,7 +328,7 @@ function DraggableCard({
           <Link
             href={`/gorevler/${task.id}`}
             draggable={false}
-            className="min-w-0 flex-1 text-[13.5px] leading-snug font-semibold text-slate-900 [overflow-wrap:anywhere]"
+            className="min-w-0 flex-1 [-webkit-touch-callout:none] text-[13.5px] leading-snug font-semibold text-slate-900 [overflow-wrap:anywhere]"
           >
             {task.title}
           </Link>
@@ -333,7 +338,12 @@ function DraggableCard({
             <RevisionBadge count={task.revision_count} size="xs" />
           </span>
         </div>
-        <Link href={`/gorevler/${task.id}`} draggable={false} className="block px-3 pb-3" tabIndex={-1}>
+        <Link
+          href={`/gorevler/${task.id}`}
+          draggable={false}
+          className="block px-3 pb-3 [-webkit-touch-callout:none]"
+          tabIndex={-1}
+        >
           {task.labels?.length || task.checklist?.length ? (
             <span className="mt-1.5 flex flex-wrap items-center gap-1">
               <ChecklistBadge {...checklistProgress(task.checklist)} />
