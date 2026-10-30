@@ -39,13 +39,33 @@ const SLATE_DARK = {
   900: "oklch(98.4% 0.003 247.858)", // ~slate-50: ana yazı
   950: "oklch(100% 0 0)",
 };
-const SURFACE_DARK = "oklch(20.8% 0.042 265.755)"; // ~slate-900: kartlar (bg-white)
+// Ana renk (turkuaz) koyu temada ters çevrilince çok parlak kalıyor ve göz yoruyor.
+// Onun yerine neredeyse renksiz, hafif soğuk beyaz tonlar: düğmeler kırık beyaz,
+// vurgu zeminleri koyu gri, vurgu yazıları açık gri.
+const TEAL_DARK = {
+  50: "oklch(26% 0.012 210)", // seçili / vurgu zemini
+  100: "oklch(32% 0.014 210)",
+  200: "oklch(40% 0.016 210)", // vurgu kenarlığı
+  300: "oklch(50% 0.018 210)",
+  400: "oklch(62% 0.02 210)",
+  500: "oklch(74% 0.02 210)", // odak kenarlığı, grafik çubukları
+  600: "oklch(90% 0.01 210)", // ana düğme zemini, vurgu yazısı
+  700: "oklch(83% 0.014 210)", // ana düğme üzerine gelince, bağlantı yazısı
+  800: "oklch(92% 0.01 210)",
+  900: "oklch(95% 0.008 210)",
+  950: "oklch(98% 0.004 210)",
+};
+const SURFACE_DARK ="oklch(20.8% 0.042 265.755)"; // ~slate-900: kartlar (bg-white)
 const CANVAS_DARK = "oklch(16.5% 0.035 266)"; // sayfa zemini
 
 function invertedBlock() {
   const lines = [`  --color-white: ${SURFACE_DARK};`, `  --app-canvas: ${CANVAS_DARK};`];
   for (const s of STEPS) lines.push(`  --color-slate-${s}: ${SLATE_DARK[s]};`);
   for (const h of HUES) {
+    if (h === "teal") {
+      for (const s of STEPS) lines.push(`  --color-teal-${s}: ${TEAL_DARK[s]};`);
+      continue;
+    }
     STEPS.forEach((s, i) => {
       const from = STEPS[STEPS.length - 1 - i];
       if (vars[h][from]) lines.push(`  --color-${h}-${s}: ${vars[h][from]};`);
