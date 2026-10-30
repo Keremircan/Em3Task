@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  CalendarDays,
   ChevronDown,
   CircleCheck,
   ClipboardList,
@@ -27,6 +28,7 @@ const MAIN_LINKS = [
   { href: "/genel", label: "Genel", icon: MessagesSquare },
   { href: "/atadigim-gorevler", label: "Atadığım Görevler", icon: ClipboardList },
   { href: "/gorevlerim", label: "Görevlerim", icon: CircleCheck },
+  { href: "/takvim", label: "Takvim", icon: CalendarDays },
   { href: "/uyeler", label: "Üyeler", icon: Users },
   { href: "/todo", label: "Yapılacaklar", icon: ListTodo },
   { href: "/profil", label: "Profil", icon: UserRound },

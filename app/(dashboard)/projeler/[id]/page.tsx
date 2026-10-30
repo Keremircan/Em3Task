@@ -32,7 +32,7 @@ async function Board({ params }: Pick<PageProps<"/projeler/[id]">, "params">) {
     supabase
       .from("tasks")
       .select(
-        "id, title, status, priority, revision_count, created_at, assigned_to, created_by, creator:profiles!tasks_created_by_fkey(full_name), assignee:profiles!tasks_assigned_to_fkey(full_name)",
+        "id, title, status, priority, due_date, revision_count, created_at, assigned_to, created_by, creator:profiles!tasks_created_by_fkey(full_name), assignee:profiles!tasks_assigned_to_fkey(full_name)",
       )
       .eq("project_id", id)
       .order("created_at", { ascending: false }),

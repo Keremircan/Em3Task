@@ -60,6 +60,12 @@ async function deliver(userIds: string[], payload: PushPayload) {
   if (expired.length) await admin.from("push_subscriptions").delete().in("id", expired);
 }
 
+// Bildirimi hemen gönderir ve bitmesini bekler (zamanlanmış görevler için)
+export async function sendPushNow(userIds: string[], payload: PushPayload) {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (ids.length && isPushConfigured()) await deliver(ids, payload);
+}
+
 // Bildirimi yanıt gönderildikten sonra yollar: kullanıcının işlemi beklemez.
 // İşlemi yapan kişiye kendi bildirimi gitmez.
 export function notifyUsers(

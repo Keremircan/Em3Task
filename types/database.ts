@@ -99,6 +99,13 @@ export type RemovedLink = {
   created_at: string;
 };
 
+// Teslim tarihi hatırlatmaları (sadece sunucu): görev başına her tür bir kez
+export type TaskReminder = {
+  task_id: string;
+  kind: "tomorrow" | "today" | "overdue";
+  sent_at: string;
+};
+
 // Mesaj tepkileri: Genel mesajına (message_id) ya da görev yorumuna (comment_id) emoji
 export type MessageReaction = {
   id: string;
@@ -246,6 +253,11 @@ export type Database = {
           Rel<"member_roles_profile_id_fkey", "profile_id", "profiles">,
           Rel<"member_roles_role_id_fkey", "role_id", "roles">,
         ]
+      >;
+      task_reminders: Table<
+        TaskReminder,
+        Pick<TaskReminder, "task_id" | "kind"> & Partial<Pick<TaskReminder, "sent_at">>,
+        [Rel<"task_reminders_task_id_fkey", "task_id", "tasks">]
       >;
       message_reactions: Table<
         MessageReaction,

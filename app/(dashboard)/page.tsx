@@ -15,6 +15,7 @@ import { card } from "@/components/ui/styles";
 import { StatusBadge } from "@/components/tasks/status-badge";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { PriorityBadge } from "@/components/tasks/priority";
+import { DueBadge } from "@/components/tasks/due-badge";
 import { PageHeader } from "./_components/page-header";
 import { ActivityFeed, ActivityFeedSkeleton } from "@/components/home/activity-feed";
 
@@ -142,7 +143,7 @@ async function Inbox() {
   const userId = await getUserId();
   const supabase = await createClient();
   const fields =
-    "id, title, status, priority, created_at, project:projects!tasks_project_id_fkey(name)";
+    "id, title, status, priority, due_date, created_at, project:projects!tasks_project_id_fkey(name)";
 
   const [waitingRes, reviewRes] = await Promise.all([
     supabase
@@ -186,6 +187,7 @@ type InboxTask = {
   title: string;
   status: TaskStatus;
   priority: TaskPriority;
+  due_date: string | null;
   created_at: string;
   project: { name: string } | null;
 };
@@ -236,6 +238,7 @@ function InboxCard({
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
+                  <DueBadge due={t.due_date} status={t.status} size="xs" />
                   <PriorityBadge priority={t.priority} size="xs" />
                   <StatusBadge status={t.status} />
                 </span>

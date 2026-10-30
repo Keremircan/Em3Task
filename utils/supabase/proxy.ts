@@ -2,8 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
-// Giriş gerektirmeyen yollar
-const PUBLIC_PATHS = ["/login"];
+// Giriş gerektirmeyen yollar. /api/cron: zamanlanmış görevler (oturum yerine
+// gizli anahtarla korunur, bkz. app/api/cron)
+const PUBLIC_PATHS = ["/login", "/api/cron"];
 
 // Her istekte oturumu yeniler; giriş yoksa /login'e yönlendirir.
 export async function updateSession(request: NextRequest) {

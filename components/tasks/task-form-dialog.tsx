@@ -30,6 +30,7 @@ export type EditableTask = {
   project_id: string | null;
   assigned_to: string | null;
   priority: TaskPriority;
+  due_date: string | null;
 };
 
 export function TaskFormDialog({
@@ -174,7 +175,7 @@ export function TaskFormDialog({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="task-project" className={fieldLabel}>
               Bağlı olduğu proje
@@ -226,6 +227,19 @@ export function TaskFormDialog({
               id="task-priority"
               defaultValue={task?.priority ?? "none"}
               disabled={pending}
+            />
+          </div>
+          <div>
+            <label htmlFor="task-due" className={fieldLabel}>
+              Teslim tarihi <span className="font-normal text-slate-400">(isteğe bağlı)</span>
+            </label>
+            <input
+              id="task-due"
+              name="due_date"
+              type="date"
+              defaultValue={task?.due_date ?? ""}
+              disabled={pending}
+              className={`${field} h-10`}
             />
           </div>
         </div>

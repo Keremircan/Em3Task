@@ -7,6 +7,7 @@ import { formatDateTime } from "@/lib/format";
 import { previewText } from "@/lib/tasks";
 import { StatusBadge } from "./status-badge";
 import { PriorityControl } from "./priority-control";
+import { DueBadge } from "./due-badge";
 import { RevisionBadge } from "./revision";
 import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
@@ -19,6 +20,7 @@ export type TaskListItem = {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  due_date: string | null;
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -106,6 +108,7 @@ export function TaskList({
                 <StatusBadge status={task.status} />
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
+                <DueBadge due={task.due_date} status={task.status} />
               </div>
               {task.description && (
                 <p className="mt-1 line-clamp-1 text-sm text-slate-500">

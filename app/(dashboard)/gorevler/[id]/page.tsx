@@ -2,12 +2,13 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, FolderKanban, Hand } from "lucide-react";
+import { ArrowLeft, CalendarClock, CalendarDays, FolderKanban, Hand } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { isUuid } from "@/lib/tasks";
 import { PriorityControl } from "@/components/tasks/priority-control";
-import { dayKey, formatDateTime } from "@/lib/format";
+import { DueBadge } from "@/components/tasks/due-badge";
+import { dayKey, formatDateTime, formatDay } from "@/lib/format";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
 import { extractLinks, withoutRemoved } from "@/lib/links";
 import { parseDayParam, todayKey } from "@/lib/days";
@@ -86,7 +87,7 @@ async function TaskDetail({
     supabase
       .from("tasks")
       .select(
-        `id, title, description, status, priority, project_id, assigned_to, created_by,
+        `id, title, description, status, priority, due_date, project_id, assigned_to, created_by,
          accepted_at, revision_count, created_at,
          project:projects!tasks_project_id_fkey(id, name),
          assignee:profiles!tasks_assigned_to_fkey(full_name),
@@ -183,6 +184,7 @@ async function TaskDetail({
                 <OptimisticStatusBadge id={task.id} status={task.status} />
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
+                <DueBadge due={task.due_date} status={task.status} />
               </div>
               <h1 className="mt-3 text-2xl leading-tight font-bold tracking-tight text-slate-900 [overflow-wrap:anywhere]">
                 {task.title}
@@ -201,7 +203,7 @@ async function TaskDetail({
                 </p>
               )}
 
-              <dl className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 2xl:grid-cols-4">
+              <dl className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 2xl:grid-cols-5">
                 <Meta label="Atayan">
                   <Person name={creatorName} />
                 </Meta>
@@ -219,6 +221,16 @@ async function TaskDetail({
                     </Link>
                   ) : (
                     <span className="text-slate-400">Projesiz</span>
+                  )}
+                </Meta>
+                <Meta label="Teslim tarihi">
+                  {task.due_date ? (
+                    <span className="flex items-center gap-2">
+                      <CalendarClock className="size-4 text-slate-400" />
+                      {formatDay(task.due_date)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">Belirtilmemiş</span>
                   )}
                 </Meta>
                 <Meta label="Oluşturulma">

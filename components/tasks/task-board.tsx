@@ -8,6 +8,7 @@ import { requestRevision } from "@/actions/tasks";
 import { formatDateTime } from "@/lib/format";
 import { BOARD_COLUMNS, canRequestRevision, STATUS_DOTS } from "@/lib/tasks";
 import { PriorityControl } from "./priority-control";
+import { DueBadge } from "./due-badge";
 import { RevisionBadge, RevisionDialog } from "./revision";
 import { OptimisticTasksProvider, useOptimisticTasks, useShownTasks } from "./optimistic-tasks";
 import { safe } from "@/lib/safe-action";
@@ -17,6 +18,7 @@ export type BoardTask = {
   title: string;
   status: TaskStatus;
   priority: TaskPriority;
+  due_date: string | null;
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -74,6 +76,7 @@ function Columns({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
                     </Link>
                     <span className="flex shrink-0 flex-col items-end gap-1">
                       <PriorityControl taskId={task.id} priority={task.priority} size="xs" />
+                      <DueBadge due={task.due_date} status={task.status} size="xs" />
                       <RevisionBadge count={task.revision_count} size="xs" />
                     </span>
                   </div>

@@ -8,6 +8,7 @@ import { clip, notifyUsers } from "@/lib/push";
 import { EVERYONE, isTaskPriority, isUuid, MAX_REVISION_NOTE } from "@/lib/tasks";
 import type { TaskPriority } from "@/types/database";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
+import { isDayString } from "@/lib/due";
 
 export type ActionResult = { error: string | null };
 export type CreateTaskResult = ActionResult & { taskId: string | null };
@@ -45,6 +46,7 @@ type TaskFields = {
   project_id: string;
   assigned_to: string | null;
   priority: TaskPriority;
+  due_date: string | null;
 };
 
 function readTaskForm(formData: FormData): TaskFields | string {
@@ -53,6 +55,7 @@ function readTaskForm(formData: FormData): TaskFields | string {
   const projectId = formData.get("project_id");
   const assignee = formData.get("assigned_to");
   const priority = formData.get("priority") ?? "none";
+  const due = String(formData.get("due_date") ?? "").trim();
 
   if (!title) return "Görev adı zorunludur.";
   if (title.length > MAX_TITLE) return "Görev adı en fazla 200 karakter olabilir.";
@@ -62,6 +65,7 @@ function readTaskForm(formData: FormData): TaskFields | string {
     return "Görevi atayacağınız kişiyi seçin.";
   }
   if (!isTaskPriority(priority)) return "Geçersiz öncelik.";
+  if (due && !isDayString(due)) return "Geçersiz teslim tarihi.";
 
   return {
     title,
@@ -69,6 +73,7 @@ function readTaskForm(formData: FormData): TaskFields | string {
     project_id: projectId,
     assigned_to: assignee === EVERYONE ? null : (assignee as string),
     priority,
+    due_date: due || null,
   };
 }
 

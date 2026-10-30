@@ -1401,3 +1401,39 @@ create policy "Reactions insert own" on public.message_reactions
     )
   );
 
+
+
+-- ---------------------------------------------------------------------
+-- TESLİM TARİHİ HATIRLATMALARI (hatirlatma.sql; zamanlama kısmı o dosyada)
+-- ---------------------------------------------------------------------
+create table if not exists public.task_reminders (
+  task_id  uuid not null references public.tasks (id) on delete cascade,
+  kind     text not null check (kind in ('tomorrow', 'today', 'overdue')),
+  sent_at  timestamptz not null default now(),
+  primary key (task_id, kind)
+);
+
+alter table public.task_reminders enable row level security;
+revoke all on public.task_reminders from anon, authenticated;
+-- Politika yok: sadece service role (sunucu) erişir.
+
+create or replace function public.reset_task_reminders()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.due_date is distinct from old.due_date then
+    delete from public.task_reminders where task_id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.reset_task_reminders() from public, anon, authenticated;
+
+drop trigger if exists tasks_reset_reminders on public.tasks;
+create trigger tasks_reset_reminders
+  after update of due_date on public.tasks
+  for each row execute function public.reset_task_reminders();

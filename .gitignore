@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Taşıma sırasında üretilen ekip verisi (e-postalar, görevler)
 supabase/data-import.sql
+
+# Gizli anahtar içeren, sadece yerelde çalıştırılacak SQL dosyaları
+supabase/yerel/
