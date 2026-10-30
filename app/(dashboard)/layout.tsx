@@ -9,6 +9,7 @@ import { MobilePageTitle, MobileTitleText } from "./_components/mobile-page-titl
 import { Logo } from "@/components/ui/logo";
 import { SidebarFooter, SidebarFooterSkeleton } from "./_components/sidebar-footer";
 import { PresencePing } from "@/components/realtime/presence-ping";
+import { SidebarSearch } from "./_components/sidebar-search";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
@@ -31,6 +32,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
             <SidebarUser />
           </Suspense>
         </div>
+        <SidebarSearch />
         <Suspense fallback={<SidebarSkeleton />}>
           <SidebarData />
         </Suspense>

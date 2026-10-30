@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   "/uyeler": "Üyeler",
   "/todo": "Yapılacaklar",
   "/takvim": "Takvim",
+  "/ara": "Arama",
   "/profil": "Profil",
 };
 

@@ -69,10 +69,8 @@ async function Board({ params }: Pick<PageProps<"/projeler/[id]">, "params">) {
         />
       </header>
 
-      {/* Mobilde sütunlar yana kaydırılır (çubuk gizli); sütunlar sayfanın altına kadar uzanır */}
-      <div className="no-scrollbar -mx-4 flex flex-1 flex-col overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-        <TaskBoard tasks={all} userId={userId} />
-      </div>
+      {/* Süzgeçler ve yana kaydırılan sütunlar TaskBoard içinde */}
+      <TaskBoard tasks={all} userId={userId} />
     </>
   );
 }

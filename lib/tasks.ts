@@ -122,3 +122,16 @@ export function previewText(markdown: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// Panoda kart sürüklenince yapılacak işlem (yoksa null: bu geçişe izin yok).
+// Kurallar butonlarla aynıdır; veritabanı da ayrıca denetler.
+export type BoardMove = "accept" | "submit" | "revision" | "complete";
+
+export function boardMove(task: WorkflowTask, to: TaskStatus, userId: string): BoardMove | null {
+  if (task.status === to) return null;
+  if (to === "in_progress" && canAccept(task, userId)) return "accept";
+  if (to === "review" && canSubmitForReview(task, userId)) return "submit";
+  if (to === "in_progress" && canRequestRevision(task, userId)) return "revision";
+  if (to === "done" && canComplete(task, userId)) return "complete";
+  return null;
+}
