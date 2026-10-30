@@ -32,6 +32,7 @@ export type Task = {
   assigned_to: string | null; // null = "Herkes"
   created_by: string | null;
   due_date: string | null; // "YYYY-MM-DD"
+  completed_at: string | null; // "Tamamlandı" yapıldığı an (veritabanı yazar)
   accepted_at: string | null;
   revision_count: number; // Kontrol → Yapılıyor (Revize Ver) sayısı
   created_at: string;
@@ -98,6 +99,17 @@ export type RemovedLink = {
   scope: string;
   url: string;
   removed_by: string | null;
+  created_at: string;
+};
+
+// Göreve harcanan süre (sayaç ya da elle); ended_at boşsa sayaç çalışıyor
+export type TimeEntry = {
+  id: string;
+  task_id: string;
+  user_id: string;
+  started_at: string;
+  ended_at: string | null;
+  note: string;
   created_at: string;
 };
 
@@ -296,6 +308,14 @@ export type Database = {
         [
           Rel<"member_roles_profile_id_fkey", "profile_id", "profiles">,
           Rel<"member_roles_role_id_fkey", "role_id", "roles">,
+        ]
+      >;
+      time_entries: Table<
+        TimeEntry,
+        Pick<TimeEntry, "task_id" | "started_at"> & Partial<Omit<TimeEntry, "task_id" | "started_at">>,
+        [
+          Rel<"time_entries_task_id_fkey", "task_id", "tasks">,
+          Rel<"time_entries_user_id_fkey", "user_id", "profiles">,
         ]
       >;
       notifications: Table<

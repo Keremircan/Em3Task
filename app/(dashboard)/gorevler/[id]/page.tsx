@@ -9,6 +9,7 @@ import { isUuid } from "@/lib/tasks";
 import { PriorityControl } from "@/components/tasks/priority-control";
 import { DueBadge } from "@/components/tasks/due-badge";
 import { TaskChecklist } from "@/components/tasks/task-checklist";
+import { TaskTime } from "@/components/tasks/task-time";
 import { LabelPicker } from "@/components/tasks/label-picker";
 import { dayKey, formatDateTime, formatDay } from "@/lib/format";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
@@ -94,6 +95,7 @@ async function TaskDetail({
     checklistRes,
     taskLabelsRes,
     allLabelsRes,
+    timeRes,
   ] = await Promise.all([
     getCurrentUser(),
     supabase
@@ -127,6 +129,11 @@ async function TaskDetail({
       .order("created_at", { ascending: true }),
     supabase.from("task_labels").select("label_id").eq("task_id", id),
     supabase.from("labels").select("id, name, color, created_by").order("name"),
+    supabase
+      .from("time_entries")
+      .select("id, user_id, started_at, ended_at, note, user:profiles!time_entries_user_id_fkey(full_name)")
+      .eq("task_id", id)
+      .order("started_at", { ascending: false }),
   ]);
 
   const task = taskRes.data;
@@ -307,6 +314,15 @@ async function TaskDetail({
               task.assigned_to === null ||
               user.isAdmin
             }
+          />
+
+          <TaskTime
+            taskId={task.id}
+            entries={timeRes.data ?? []}
+            meId={user.id}
+            // eslint-disable-next-line react-hooks/purity -- istek anındaki saat bilerek kullanılıyor
+            serverNow={Date.now()}
+            today={today}
           />
 
           <div id="yorumlar" className="scroll-mt-20">

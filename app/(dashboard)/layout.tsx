@@ -1,5 +1,7 @@
 import { Suspense } from "react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserId } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
+import { RunningTimer } from "@/components/time/running-timer";
 import { getProjects } from "@/lib/projects";
 import { SidebarShell } from "./_components/sidebar-shell";
 import { SidebarNav, SidebarNavList } from "./_components/sidebar-nav";
@@ -50,6 +52,9 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<SidebarSkeleton />}>
           <SidebarData />
         </Suspense>
+        <Suspense fallback={null}>
+          <SidebarTimer />
+        </Suspense>
         <Suspense fallback={<SidebarFooterSkeleton />}>
           <SidebarFooter />
         </Suspense>
@@ -78,6 +83,26 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 async function Bell({ variant }: { variant: "sidebar" | "mobile" }) {
   const { items, unread, serverNow } = await getNotifications();
   return <NotificationBell items={items} unread={unread} serverNow={serverNow} variant={variant} />;
+}
+
+// Çalışan sayaç varsa sidebar'da göster
+async function SidebarTimer() {
+  const [userId, supabase] = await Promise.all([getUserId(), createClient()]);
+  const { data } = await supabase
+    .from("time_entries")
+    .select("task_id, started_at, task:tasks!time_entries_task_id_fkey(title)")
+    .eq("user_id", userId)
+    .is("ended_at", null)
+    .maybeSingle();
+  if (!data) return null;
+  return (
+    <RunningTimer
+      key={data.started_at}
+      taskId={data.task_id}
+      taskTitle={data.task?.title ?? "Görev"}
+      startedAt={data.started_at}
+    />
+  );
 }
 
 async function SidebarUser() {

@@ -22,6 +22,7 @@ const TABLES = [
   "labels",
   "task_labels",
   "notifications",
+  "time_entries",
 ] as const;
 
 // Art arda gelen olayları tek yenilemede toplamak için bekleme süresi

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
+  ChartColumn,
   ChevronDown,
   CircleCheck,
   ClipboardList,
@@ -29,6 +30,7 @@ const MAIN_LINKS = [
   { href: "/atadigim-gorevler", label: "Atadığım Görevler", icon: ClipboardList },
   { href: "/gorevlerim", label: "Görevlerim", icon: CircleCheck },
   { href: "/takvim", label: "Takvim", icon: CalendarDays },
+  { href: "/raporlar", label: "Raporlar", icon: ChartColumn },
   { href: "/uyeler", label: "Üyeler", icon: Users },
   { href: "/todo", label: "Yapılacaklar", icon: ListTodo },
   { href: "/profil", label: "Profil", icon: UserRound },

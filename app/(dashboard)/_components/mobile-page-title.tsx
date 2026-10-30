@@ -11,6 +11,7 @@ const TITLES: Record<string, string> = {
   "/todo": "Yapılacaklar",
   "/takvim": "Takvim",
   "/ara": "Arama",
+  "/raporlar": "Raporlar",
   "/profil": "Profil",
 };
 
