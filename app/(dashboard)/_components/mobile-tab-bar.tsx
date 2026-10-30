@@ -23,7 +23,7 @@ export function MobileTabBarList({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="Alt menü"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-[#141414]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="theme-fixed fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-[#141414]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5">
         {TABS.map(({ href, label, icon: Icon }) => {

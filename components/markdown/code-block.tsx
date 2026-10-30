@@ -33,7 +33,7 @@ export function CodeBlock({
   }
 
   return (
-    <div className="code-block group my-4 overflow-hidden rounded-xl border border-slate-800 bg-[#0d1424]">
+    <div className="code-block theme-fixed group my-4 overflow-hidden rounded-xl border border-slate-800 bg-[#0d1424]">
       <div className="flex items-center justify-between border-b border-white/5 px-4 py-2">
         <span className="font-mono text-xs tracking-wide text-slate-400 uppercase">
           {language ?? "kod"}

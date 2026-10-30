@@ -17,7 +17,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex min-h-screen flex-1 bg-[#f4f6f8]">
+    <div className="flex min-h-screen flex-1 bg-[var(--app-canvas)]">
       <SidebarShell
         mobileTitle={
           <Suspense fallback={<MobileTitleText label="PANO" title="Em3Task" />}>

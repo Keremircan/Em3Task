@@ -73,7 +73,7 @@ export function Menu({
 
   const panel =
     tone === "dark"
-      ? "border-white/10 bg-[#1f1f1f] text-neutral-200 shadow-black/40"
+      ? "theme-fixed border-white/10 bg-[#1f1f1f] text-neutral-200 shadow-black/40"
       : "border-slate-200 bg-white text-slate-700 shadow-slate-900/10";
   const itemHover = tone === "dark" ? "hover:bg-white/8" : "hover:bg-slate-50";
 

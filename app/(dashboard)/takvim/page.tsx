@@ -163,7 +163,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/takvim">, "searchPara
                       ? "bg-teal-600 text-white"
                       : inMonth
                         ? "text-slate-700"
-                        : "text-slate-300"
+                        : "text-slate-400"
                   }`}
                 >
                   {Number(d.slice(8))}

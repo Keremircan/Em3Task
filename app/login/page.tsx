@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#f4f6f8] px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+    <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[var(--app-canvas)] px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
       {/* Hafif nokta deseni: düz zemini kırar, dikkat dağıtmaz */}
       <div
         aria-hidden

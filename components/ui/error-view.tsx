@@ -13,7 +13,7 @@ export function ErrorView({ retry, fullScreen = false }: { retry: () => void; fu
     <div
       role="alert"
       className={`flex flex-col items-center justify-center px-6 text-center ${
-        fullScreen ? "min-h-screen bg-[#f4f6f8]" : "flex-1 py-16"
+        fullScreen ? "min-h-screen bg-[var(--app-canvas)]" : "flex-1 py-16"
       }`}
     >
       <span className="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">

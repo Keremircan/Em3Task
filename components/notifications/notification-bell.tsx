@@ -118,7 +118,7 @@ export function NotificationBell({
         <div
           role="dialog"
           aria-label="Bildirimler"
-          className={`z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl shadow-slate-900/20 ${
+          className={`theme-follow z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl shadow-slate-900/20 ${
             variant === "mobile"
               ? "fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top))]"
               : "fixed top-14 left-4 w-[22rem]"

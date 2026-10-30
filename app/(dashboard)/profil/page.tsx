@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { Bell, CalendarDays, CircleCheck, IdCard, KeyRound } from "lucide-react";
+import { Bell, CalendarDays, CircleCheck, IdCard, KeyRound, Palette } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser, getUserId } from "@/lib/auth";
 import { card } from "@/components/ui/styles";
@@ -8,6 +8,7 @@ import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { NotificationSettings } from "@/components/profile/notification-settings";
 import { PasswordForm } from "@/components/profile/password-form";
 import { AccountForm } from "@/components/profile/account-form";
+import { ThemeSelect } from "@/components/theme/theme-select";
 import { PageHeader } from "../_components/page-header";
 
 export const metadata: Metadata = { title: "Profil · Em3Task" };
@@ -93,6 +94,13 @@ async function Profile() {
           <KeyRound className="size-4.5 text-slate-400" /> Şifre değiştir
         </h2>
         <PasswordForm />
+      </section>
+
+      <section className={`${card} p-5 sm:p-6`}>
+        <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
+          <Palette className="size-4.5 text-slate-400" /> Görünüm
+        </h2>
+        <ThemeSelect />
       </section>
 
       <section className={`${card} p-5 sm:p-6`}>

@@ -31,7 +31,7 @@ export function SidebarShell({
     <>
       {/* Mobil üst çubuk */}
       {/* Çentikli ekranlarda durum çubuğunun altında kalsın diye güvenli alan kadar üst boşluk */}
-      <div className="fixed inset-x-0 top-0 z-30 flex h-[calc(3rem+env(safe-area-inset-top))] items-center gap-2.5 border-b border-white/5 bg-[#141414] px-3 pt-[env(safe-area-inset-top)] lg:hidden">
+      <div className="theme-fixed fixed inset-x-0 top-0 z-30 flex h-[calc(3rem+env(safe-area-inset-top))] items-center gap-2.5 border-b border-white/5 bg-[#141414] px-3 pt-[env(safe-area-inset-top)] lg:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -59,7 +59,7 @@ export function SidebarShell({
           if ((e.target as Element).closest("a")) setOpen(false);
         }}
         className={[
-          "fixed inset-y-0 left-0 z-50 flex w-[248px] max-w-[85vw] flex-col border-r border-white/5 bg-[#141414] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200",
+          "theme-fixed fixed inset-y-0 left-0 z-50 flex w-[248px] max-w-[85vw] flex-col border-r border-white/5 bg-[#141414] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200",
           "lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:max-w-none lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, UserRound } from "lucide-react";
+import { LogOut, Moon, Sun, UserRound } from "lucide-react";
+import { onThemeChange, setTheme } from "@/components/theme/theme";
 import { logout } from "@/app/login/actions";
 import { Menu } from "@/components/ui/menu";
 import { Avatar } from "@/components/ui/avatar";
@@ -24,6 +25,18 @@ export function UserMenu({
 }) {
   const [, startTransition] = useTransition();
   const router = useRouter();
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const sync = () => setDark(document.documentElement.classList.contains("dark"));
+    sync();
+    const off = onThemeChange(sync);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", sync);
+    return () => {
+      off();
+      mq.removeEventListener("change", sync);
+    };
+  }, []);
 
   return (
     <Menu
@@ -54,6 +67,12 @@ export function UserMenu({
           label: "Profilim",
           icon: <UserRound className="size-4" />,
           onSelect: () => router.push("/profil"),
+        },
+        {
+          // Hızlı geçiş: o an görünen temanın tersine sabitler (Profil'den "Sistem"e dönülebilir)
+          label: dark ? "Açık tema" : "Koyu tema",
+          icon: dark ? <Sun className="size-4" /> : <Moon className="size-4" />,
+          onSelect: () => setTheme(dark ? "light" : "dark"),
         },
         {
           label: "Güvenli çıkış",
