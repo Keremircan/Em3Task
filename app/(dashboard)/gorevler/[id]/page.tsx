@@ -110,7 +110,7 @@ async function TaskDetail({
     supabase
       .from("task_comments")
       .select(
-        `id, user_id, content, created_at,
+        `id, user_id, content, created_at, edited_at,
          author:profiles!task_comments_user_id_fkey(full_name, avatar_url),
          ${REACTIONS_SELECT}`,
       )
@@ -320,6 +320,7 @@ async function TaskDetail({
               selectedDay={selectedDay}
               days={days}
               today={today}
+              members={formOptions.members}
             />
           </div>
         </div>

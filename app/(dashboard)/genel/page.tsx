@@ -10,6 +10,7 @@ import { kindOfMime } from "@/lib/general-files";
 import { Markdown } from "@/components/markdown/markdown";
 import { ZoomableAvatar } from "@/components/ui/avatar-lightbox";
 import { Reactable } from "@/components/chat/reactions";
+import { EditableBody, EditableItem, EditButton } from "@/components/chat/editable";
 import { groupReactions, REACTIONS_SELECT } from "@/lib/reactions";
 import { card } from "@/components/ui/styles";
 import { TaskLinks } from "@/components/tasks/task-links";
@@ -63,7 +64,7 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
     supabase
       .from("general_messages")
       .select(
-        `id, user_id, receiver_id, content, created_at,
+        `id, user_id, receiver_id, content, created_at, edited_at,
          author:profiles!general_messages_user_id_fkey(full_name, avatar_url),
          receiver:profiles!general_messages_receiver_id_fkey(full_name),
          ${REACTIONS_SELECT}`,
@@ -194,68 +195,83 @@ async function General({ searchParams }: Pick<PageProps<"/genel">, "searchParams
                         <span className="h-px flex-1 bg-slate-100" />
                       </div>
                     )}
-                    <div
-                      className={`group flex gap-3 rounded-xl px-2 py-1 ${grouped ? "" : "mt-3"} ${
-                        isPrivate
-                          ? "bg-amber-50/50 ring-1 ring-amber-100 hover:bg-amber-50/80"
-                          : "hover:bg-slate-50/80"
-                      }`}
+                    <EditableItem
+                      kind="general"
+                      id={m.id}
+                      content={m.content}
+                      editedAt={m.edited_at}
+                      canEdit={m.user_id === user.id}
                     >
-                      <div className="w-8 shrink-0">
-                        {!grouped && (
-                          <ZoomableAvatar name={name} src={m.author?.avatar_url} size="sm" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        {!grouped && (
-                          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                            <span className="text-[13px] font-bold text-slate-900">{name}</span>
-                            {isPrivate && (
-                              <PrivateTag
-                                other={
-                                  m.user_id === user.id
-                                    ? (m.receiver?.full_name ?? "Eski üye")
-                                    : name
-                                }
+                      <div
+                        className={`group flex gap-3 rounded-xl px-2 py-1 ${grouped ? "" : "mt-3"} ${
+                          isPrivate
+                            ? "bg-amber-50/50 ring-1 ring-amber-100 hover:bg-amber-50/80"
+                            : "hover:bg-slate-50/80"
+                        }`}
+                      >
+                        <div className="w-8 shrink-0">
+                          {!grouped && (
+                            <ZoomableAvatar name={name} src={m.author?.avatar_url} size="sm" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {!grouped && (
+                            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <span className="text-[13px] font-bold text-slate-900">{name}</span>
+                              {isPrivate && (
+                                <PrivateTag
+                                  other={
+                                    m.user_id === user.id
+                                      ? (m.receiver?.full_name ?? "Eski üye")
+                                      : name
+                                  }
+                                />
+                              )}
+                              <time
+                                dateTime={m.created_at}
+                                title={formatDateTime(m.created_at)}
+                                className="text-xs text-slate-400"
+                              >
+                                {formatTime(m.created_at)}
+                              </time>
+                            </p>
+                          )}
+                          <Reactable
+                            target="general"
+                            messageId={m.id}
+                            reactions={groupReactions(m.reactions)}
+                            me={{ id: user.id, name: user.name }}
+                          >
+                            <EditableBody rich={Boolean(m.content)}>
+                              {m.content && (
+                                <div className="text-sm [&_.markdown]:text-sm">
+                                  <Markdown mentions={team.map((t) => t.name)}>
+                                    {m.content}
+                                  </Markdown>
+                                </div>
+                              )}
+                            </EditableBody>
+                            {attached.length > 0 && <MessageFiles files={attached} />}
+                          </Reactable>
+                        </div>
+                        {(canDelete(m.user_id) || m.user_id === user.id) && (
+                          <div className="flex shrink-0 items-center gap-0.5 self-start">
+                            <EditButton />
+                            {canDelete(m.user_id) && (
+                              <ConfirmDeleteButton
+                                action={deleteGeneralMessage}
+                                args={[m.id]}
+                                label="Mesajı sil"
+                                title="Mesajı sil"
+                                message="Bu mesaj ve ekli dokümanları herkes için kalıcı olarak silinecek."
+                                confirmLabel="Mesajı sil"
+                                reveal
                               />
                             )}
-                            <time
-                              dateTime={m.created_at}
-                              title={formatDateTime(m.created_at)}
-                              className="text-xs text-slate-400"
-                            >
-                              {formatTime(m.created_at)}
-                            </time>
-                          </p>
+                          </div>
                         )}
-                        <Reactable
-                          target="general"
-                          messageId={m.id}
-                          reactions={groupReactions(m.reactions)}
-                          me={{ id: user.id, name: user.name }}
-                        >
-                          {m.content && (
-                            <div className="text-sm [&_.markdown]:text-sm">
-                              <Markdown>{m.content}</Markdown>
-                            </div>
-                          )}
-                          {attached.length > 0 && <MessageFiles files={attached} />}
-                        </Reactable>
                       </div>
-                      {canDelete(m.user_id) && (
-                        <div className="shrink-0 self-start">
-                          <ConfirmDeleteButton
-                            action={deleteGeneralMessage}
-                            args={[m.id]}
-                            label="Mesajı sil"
-                            title="Mesajı sil"
-                            message="Bu mesaj ve ekli dokümanları herkes için kalıcı olarak silinecek."
-                            confirmLabel="Mesajı sil"
-                            reveal
-                          />
-                        </div>
-                      )}
-                    </div>
+                    </EditableItem>
                   </li>
                 );
               })}

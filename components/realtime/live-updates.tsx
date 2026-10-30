@@ -21,6 +21,7 @@ const TABLES = [
   "task_checklist_items",
   "labels",
   "task_labels",
+  "notifications",
 ] as const;
 
 // Art arda gelen olayları tek yenilemede toplamak için bekleme süresi

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser, getUserId } from "@/lib/auth";
+import { getTeamMembers } from "@/lib/team";
+import { findMentions } from "@/lib/mentions";
 import { clip, notifyUsers } from "@/lib/push";
 import { isUuid } from "@/lib/tasks";
 import {
@@ -47,19 +49,34 @@ export async function addComment(
     };
   }
 
-  // Görevi atayana ve sorumlusuna haber ver (yorumu yazan hariç)
-  const [{ data: task }, user] = await Promise.all([
+  // Anılan kişilere "sizi andı", görevi atayana ve sorumlusuna "yeni yorum"
+  // (yorumu yazan hariç; anılan kişiye iki kez bildirim gitmez)
+  const [{ data: task }, user, team] = await Promise.all([
     supabase.from("tasks").select("title, created_by, assigned_to").eq("id", taskId).maybeSingle(),
     getCurrentUser(),
+    getTeamMembers(),
   ]);
   if (task) {
+    const mentioned = findMentions(text, team).filter((id) => id !== userId);
     notifyUsers(
-      [task.created_by, task.assigned_to],
+      mentioned,
+      {
+        title: `${user.name} sizi bir yorumda andı`,
+        body: `${clip(task.title, 60)}: ${clip(text)}`,
+        url: `/gorevler/${taskId}#yorumlar`,
+        tag: `task-${taskId}`,
+        kind: "mention",
+      },
+      userId,
+    );
+    notifyUsers(
+      [task.created_by, task.assigned_to].filter((id) => !id || !mentioned.includes(id)),
       {
         title: `Yeni yorum: ${clip(task.title, 60)}`,
         body: `${user.name}: ${clip(text)}`,
         url: `/gorevler/${taskId}`,
         tag: `task-${taskId}`,
+        kind: "comment",
       },
       userId,
     );
@@ -165,6 +182,28 @@ export async function deleteTaskAttachment(attachmentId: string): Promise<Action
   if (!data.length) return { error: "Sadece kendi yüklediğiniz dosyayı silebilirsiniz." };
 
   await supabase.storage.from(ATTACHMENTS_BUCKET).remove(data.map((d) => d.file_url));
+
+  revalidateTaskPages();
+  return { error: null };
+}
+
+// Yorumu düzenle: sadece yazan kişi; sadece içerik değişir (veritabanı kuralı da
+// bunu zorunlu kılar ve "düzenlendi" zamanını kendisi yazar)
+export async function editComment(commentId: string, content: string): Promise<ActionResult> {
+  await getUserId();
+  const text = String(content ?? "").trim();
+  if (!isUuid(commentId)) return { error: "Geçersiz yorum." };
+  if (!text) return { error: "Yorum boş olamaz." };
+  if (text.length > MAX_COMMENT_LENGTH) return { error: "Yorum çok uzun (en fazla 20.000 karakter)." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("task_comments")
+    .update({ content: text })
+    .eq("id", commentId)
+    .select("id");
+  if (error) return { error: "Yorum güncellenemedi." };
+  if (!data.length) return { error: "Sadece kendi yorumunuzu düzenleyebilirsiniz." };
 
   revalidateTaskPages();
   return { error: null };

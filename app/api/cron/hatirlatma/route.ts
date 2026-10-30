@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     await sendPushNow(
       recipients.filter((id): id is string => Boolean(id)),
-      { title: title.slice(0, 120), body, url: `/gorevler/${t.id}`, tag: `due-${t.id}` },
+      { title: title.slice(0, 120), body, url: `/gorevler/${t.id}`, tag: `due-${t.id}`, kind: "due" },
     );
     sent++;
   }

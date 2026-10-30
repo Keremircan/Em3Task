@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import { CodeBlock } from "./code-block";
+import { rehypeMentions } from "./rehype-mentions";
 
 // Markdown içindeki ham HTML render edilmez (react-markdown varsayılanı),
 // javascript: gibi tehlikeli link adresleri de otomatik temizlenir.
@@ -41,12 +42,17 @@ const components: Components = {
   },
 };
 
-export function Markdown({ children }: { children: string }) {
+// mentions: verilirse "@Ad Soyad" bahsetmeleri renkli rozet olarak gösterilir
+export function Markdown({ children, mentions }: { children: string; mentions?: string[] }) {
   return (
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[[rehypeHighlight, { detect: false }]]}
+        rehypePlugins={
+          mentions?.length
+            ? [[rehypeHighlight, { detect: false }], [rehypeMentions, { names: mentions }]]
+            : [[rehypeHighlight, { detect: false }]]
+        }
         components={components}
       >
         {children}

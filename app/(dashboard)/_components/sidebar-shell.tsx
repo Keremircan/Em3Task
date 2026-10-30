@@ -8,9 +8,11 @@ import { Logo } from "@/components/ui/logo";
 export function SidebarShell({
   children,
   mobileTitle,
+  mobileActions,
 }: {
   children: ReactNode;
   mobileTitle: ReactNode; // mobil üst çubukta aktif sayfanın başlığı
+  mobileActions?: ReactNode; // mobil üst çubuğun sağı (ör. bildirim zili)
 }) {
   const [open, setOpen] = useState(false);
 
@@ -39,7 +41,8 @@ export function SidebarShell({
           <Menu className="size-5" />
         </button>
         <Logo size={22} className="shrink-0 rounded-[6px]" />
-        <span className="flex min-w-0">{mobileTitle}</span>
+        <span className="flex min-w-0 flex-1">{mobileTitle}</span>
+        {mobileActions}
       </div>
 
       {open && (

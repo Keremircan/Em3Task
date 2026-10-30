@@ -8,6 +8,7 @@ import { deleteComment } from "@/actions/task-details";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { CommentThread } from "./comment-form";
 import { Reactable } from "@/components/chat/reactions";
+import { EditableBody, EditableItem, EditButton } from "@/components/chat/editable";
 import { groupReactions, type ReactionRow } from "@/lib/reactions";
 
 export type TaskComment = {
@@ -16,6 +17,7 @@ export type TaskComment = {
   content: string;
   created_at: string;
   author: { full_name: string | null; avatar_url?: string | null } | null;
+  edited_at?: string | null;
   reactions?: ReactionRow[];
 };
 
@@ -29,6 +31,7 @@ export function TaskComments({
   selectedDay,
   days,
   today,
+  members = [],
 }: {
   taskId: string;
   comments: TaskComment[]; // seçilen güne göre süzülmüş
@@ -39,13 +42,12 @@ export function TaskComments({
   selectedDay: string | null;
   days: string[];
   today: string;
+  members?: { id: string; name: string }[]; // "@" önerisi ve bahsetme vurgusu
 }) {
   return (
     <section className={`${card} p-4 sm:p-5`}>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-900">
-          Yorumlar ve tartışma
-        </h2>
+        <h2 className="text-base font-bold text-slate-900">Yorumlar ve tartışma</h2>
       </div>
 
       <div className="mb-4 border-b border-slate-100 pb-4">
@@ -62,6 +64,7 @@ export function TaskComments({
       <CommentThread
         taskId={taskId}
         authorName={currentUserName}
+        members={members.filter((m) => m.id !== currentUserId)}
         viewingPastDay={selectedDay !== null && selectedDay !== today}
         hasItems={comments.length > 0}
         empty={
@@ -79,40 +82,54 @@ export function TaskComments({
         items={comments.map((comment) => {
           const name = comment.author?.full_name || "Eski üye";
           const canDelete = isAdmin || comment.user_id === currentUserId;
+          const canEdit = comment.user_id === currentUserId;
           return (
             <li key={comment.id} className="group flex gap-3.5">
               <ZoomableAvatar name={name} src={comment.author?.avatar_url} />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2.5">
-                  <span className="font-bold text-slate-900">{name}</span>
-                  <time dateTime={comment.created_at} className="text-sm text-slate-400">
-                    {formatDateTime(comment.created_at)}
-                  </time>
-                  {canDelete && (
-                    <span className="ml-auto">
-                      <ConfirmDeleteButton
-                        action={deleteComment}
-                        args={[comment.id]}
-                        label="Yorumu sil"
-                        title="Yorumu sil"
-                        message="Bu yorum herkes için kalıcı olarak silinecek."
-                        confirmLabel="Yorumu sil"
-                        reveal
-                      />
-                    </span>
-                  )}
-                </div>
-                <Reactable
-                  target="comment"
-                  messageId={comment.id}
-                  reactions={groupReactions(comment.reactions)}
-                  me={{ id: currentUserId, name: currentUserName }}
-                >
-                  <div className="mt-1.5 rounded-xl rounded-tl-md bg-slate-50 px-4 py-2">
-                    <Markdown>{comment.content}</Markdown>
+              <EditableItem
+                kind="comment"
+                id={comment.id}
+                content={comment.content}
+                editedAt={comment.edited_at ?? null}
+                canEdit={canEdit}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2.5">
+                    <span className="font-bold text-slate-900">{name}</span>
+                    <time dateTime={comment.created_at} className="text-sm text-slate-400">
+                      {formatDateTime(comment.created_at)}
+                    </time>
+                    {(canDelete || canEdit) && (
+                      <span className="ml-auto flex items-center gap-0.5">
+                        <EditButton />
+                        {canDelete && (
+                          <ConfirmDeleteButton
+                            action={deleteComment}
+                            args={[comment.id]}
+                            label="Yorumu sil"
+                            title="Yorumu sil"
+                            message="Bu yorum herkes için kalıcı olarak silinecek."
+                            confirmLabel="Yorumu sil"
+                            reveal
+                          />
+                        )}
+                      </span>
+                    )}
                   </div>
-                </Reactable>
-              </div>
+                  <Reactable
+                    target="comment"
+                    messageId={comment.id}
+                    reactions={groupReactions(comment.reactions)}
+                    me={{ id: currentUserId, name: currentUserName }}
+                  >
+                    <div className="mt-1.5 rounded-xl rounded-tl-md bg-slate-50 px-4 py-2">
+                      <EditableBody>
+                        <Markdown mentions={members.map((m) => m.name)}>{comment.content}</Markdown>
+                      </EditableBody>
+                    </div>
+                  </Reactable>
+                </div>
+              </EditableItem>
             </li>
           );
         })}

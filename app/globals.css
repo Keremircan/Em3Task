@@ -124,3 +124,8 @@ body {
     opacity: 1;
   }
 }
+
+/* @bahsetme rozeti (mesaj ve yorumlarda) */
+.markdown .mention {
+  @apply rounded bg-violet-50 px-1 font-semibold text-violet-700;
+}

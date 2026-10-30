@@ -10,6 +10,8 @@ import { Logo } from "@/components/ui/logo";
 import { SidebarFooter, SidebarFooterSkeleton } from "./_components/sidebar-footer";
 import { PresencePing } from "@/components/realtime/presence-ping";
 import { SidebarSearch } from "./_components/sidebar-search";
+import { getNotifications } from "@/lib/notifications";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
@@ -20,6 +22,13 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
             <MobileTitle />
           </Suspense>
         }
+        mobileActions={
+          <span className="lg:hidden">
+            <Suspense fallback={<div className="size-8" />}>
+              <Bell variant="mobile" />
+            </Suspense>
+          </span>
+        }
       >
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-4">
           <span className="flex min-w-0 items-center gap-2">
@@ -28,9 +37,14 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
               Em3Task
             </span>
           </span>
-          <Suspense fallback={<div className="size-8 rounded-full bg-white/[0.08]" />}>
-            <SidebarUser />
-          </Suspense>
+          <span className="flex items-center gap-1.5">
+            <Suspense fallback={<div className="size-8" />}>
+              <Bell variant="sidebar" />
+            </Suspense>
+            <Suspense fallback={<div className="size-8 rounded-full bg-white/[0.08]" />}>
+              <SidebarUser />
+            </Suspense>
+          </span>
         </div>
         <SidebarSearch />
         <Suspense fallback={<SidebarSkeleton />}>
@@ -58,6 +72,12 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
       </Suspense>
     </div>
   );
+}
+
+// Bildirim zili (masaüstünde sidebar'da, telefonda üst çubukta); veri tek sorguda
+async function Bell({ variant }: { variant: "sidebar" | "mobile" }) {
+  const { items, unread, serverNow } = await getNotifications();
+  return <NotificationBell items={items} unread={unread} serverNow={serverNow} variant={variant} />;
 }
 
 async function SidebarUser() {

@@ -44,6 +44,7 @@ export type Comment = {
   user_id: string | null;
   content: string;
   created_at: string;
+  edited_at: string | null;
 };
 
 export type Attachment = {
@@ -77,6 +78,7 @@ export type GeneralMessage = {
   receiver_id: string | null; // null: herkese açık; dolu: sadece gönderen ve alıcı görür
   content: string;
   created_at: string;
+  edited_at: string | null;
 };
 
 export type GeneralFile = {
@@ -96,6 +98,19 @@ export type RemovedLink = {
   scope: string;
   url: string;
   removed_by: string | null;
+  created_at: string;
+};
+
+// Uygulama içi bildirim (🔔): sunucu yazar, alıcı okur / okundu işaretler
+export type AppNotification = {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  kind: string;
+  title: string;
+  body: string;
+  url: string;
+  read_at: string | null;
   created_at: string;
 };
 
@@ -281,6 +296,15 @@ export type Database = {
         [
           Rel<"member_roles_profile_id_fkey", "profile_id", "profiles">,
           Rel<"member_roles_role_id_fkey", "role_id", "roles">,
+        ]
+      >;
+      notifications: Table<
+        AppNotification,
+        Pick<AppNotification, "recipient_id" | "title"> &
+          Partial<Omit<AppNotification, "recipient_id" | "title">>,
+        [
+          Rel<"notifications_recipient_id_fkey", "recipient_id", "profiles">,
+          Rel<"notifications_actor_id_fkey", "actor_id", "profiles">,
         ]
       >;
       task_checklist_items: Table<

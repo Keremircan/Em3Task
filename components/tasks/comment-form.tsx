@@ -8,6 +8,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { field, primaryButton } from "@/components/ui/styles";
 import { safe } from "@/lib/safe-action";
 import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
+import { MentionList, useMentions } from "@/components/chat/mentions";
+import type { Mentionable } from "@/lib/mentions";
 
 type PendingComment = { key: string; text: string };
 
@@ -18,6 +20,7 @@ type PendingComment = { key: string; text: string };
 export function CommentThread({
   taskId,
   authorName,
+  members = [],
   items,
   hasItems,
   empty,
@@ -25,6 +28,7 @@ export function CommentThread({
 }: {
   taskId: string;
   authorName: string;
+  members?: Mentionable[]; // "@" ile önerilecek ekip üyeleri
   items: ReactNode; // sunucuda çizilmiş yorumlar (<li> listesi)
   hasItems: boolean;
   empty: ReactNode; // yorum yokken gösterilecek kutu
@@ -34,6 +38,7 @@ export function CommentThread({
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState("");
+  const mention = useMentions(members, textareaRef, content, setContent);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const [pending, addPending] = useOptimistic<PendingComment[], PendingComment>(
@@ -98,12 +103,21 @@ export function CommentThread({
         <label htmlFor="comment" className="sr-only">
           Yorum
         </label>
+        <div className="relative">
+        <MentionList {...mention} />
         <textarea
           ref={textareaRef}
           id="comment"
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => {
+            setContent(e.target.value);
+            mention.sync();
+          }}
+          onSelect={mention.sync}
+          onBlur={() => setTimeout(mention.close, 150)}
           onKeyDown={(e) => {
+            // "@" öneri listesi açıksa oklar/Enter kişi seçer
+            if (mention.onKeyDown(e)) return;
             // Enter gönderir, Shift + Enter yeni satır (Türkçe klavye birleşimi sürerken değil)
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
@@ -114,6 +128,7 @@ export function CommentThread({
           placeholder={"Yorumunuzu yazın… Kod paylaşmak için:\n```ts\nconst x = 1;\n```"}
           className={`${field} mt-0 resize-y py-2.5 font-[inherit]`}
         />
+        </div>
 
         {error && (
           <p

@@ -25,6 +25,7 @@ import { formatBytes } from "@/lib/attachments";
 import { Avatar } from "@/components/ui/avatar";
 import { safe } from "@/lib/safe-action";
 import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
+import { MentionList, useMentions } from "@/components/chat/mentions";
 
 type Sending = {
   text: string;
@@ -58,6 +59,8 @@ export function MessageComposer({
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  // "@" ile kişi önerme: özel mesajda başka birini anmak anlamsız (bildirilmez)
+  const mention = useMentions(receiver ? [] : members, textRef, content, setContent);
 
   function addFiles(list: FileList | null) {
     if (!list) return;
@@ -271,12 +274,21 @@ export function MessageComposer({
           <label htmlFor="general-message" className="sr-only">
             Mesaj
           </label>
+          <div className="relative flex min-w-0 flex-1">
+          <MentionList {...mention} />
           <textarea
             ref={textRef}
             id="general-message"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              mention.sync();
+            }}
+            onSelect={mention.sync}
+            onBlur={() => setTimeout(mention.close, 150)}
             onKeyDown={(e) => {
+              // "@" öneri listesi açıksa oklar/Enter kişi seçer
+              if (mention.onKeyDown(e)) return;
               // Enter gönderir, Shift + Enter yeni satır
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
@@ -289,6 +301,7 @@ export function MessageComposer({
             }
             className="max-h-48 min-h-9 min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 sm:px-4 text-[13.5px] text-slate-900 outline-none [field-sizing:content] placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
           />
+          </div>
           <button
             type="submit"
             disabled={pending || (!content.trim() && files.length === 0)}

@@ -101,6 +101,7 @@ export async function createTask(formData: FormData): Promise<CreateTaskResult> 
       body: `${user.name}: ${clip(fields.title)}`,
       url: taskUrl(data.id),
       tag: `task-${data.id}`,
+      kind: "task",
     },
     userId,
   );
@@ -145,6 +146,7 @@ export async function updateTask(
         body: `${user.name}: ${clip(fields.title)}`,
         url: taskUrl(taskId),
         tag: `task-${taskId}`,
+        kind: "task",
       },
       userId,
     );
@@ -234,6 +236,7 @@ export async function submitForReview(taskId: string): Promise<ActionResult> {
       body: `${user.name}: ${clip(data[0].title)}`,
       url: taskUrl(taskId),
       tag: `task-${taskId}`,
+      kind: "review",
     },
     userId,
   );
@@ -282,6 +285,7 @@ export async function requestRevision(taskId: string, note = ""): Promise<Action
       body: text ? `${user.name}: ${clip(text)}` : `${user.name} görevde düzeltme istedi.`,
       url: taskUrl(taskId),
       tag: `task-${taskId}`,
+      kind: "revision",
     },
     userId,
   );

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser, getUserId } from "@/lib/auth";
+import { getTeamMembers } from "@/lib/team";
+import { findMentions } from "@/lib/mentions";
 import { clip, notifyUsers } from "@/lib/push";
 import { isUuid } from "@/lib/tasks";
 import {
@@ -101,19 +103,34 @@ export async function sendGeneralMessage(
   }
 
   // Bildirim: herkese açık mesaj yazan hariç tüm ekibe, özel mesaj SADECE alıcıya.
+  // Herkese açık mesajda anılan kişilere ayrıca "sizi andı" gider. Özel mesajda
+  // başka birini anmak gizliliği bozacağı için bahsetmeler bildirilmez.
   // Etiket sabit: art arda gelen mesajlar telefonda üst üste yığılmaz.
-  const [user, { data: members }] = await Promise.all([
-    getCurrentUser(),
-    receiver ? Promise.resolve({ data: [{ id: receiver }] }) : supabase.from("profiles").select("id"),
-  ]);
+  const [user, team] = await Promise.all([getCurrentUser(), receiver ? null : getTeamMembers()]);
   const fileNote = rows.length === 1 ? "📎 1 dosya" : `📎 ${rows.length} dosya`;
+  const mentioned = team && text ? findMentions(text, team).filter((id) => id !== userId) : [];
+  if (mentioned.length) {
+    notifyUsers(
+      mentioned,
+      {
+        title: `${user.name} sizi Genel'de andı`,
+        body: clip(text),
+        url: "/genel",
+        tag: "genel",
+        kind: "mention",
+      },
+      userId,
+    );
+  }
+  const others = receiver ? [receiver] : (team ?? []).map((m) => m.id).filter((id) => !mentioned.includes(id));
   notifyUsers(
-    (members ?? []).map((m) => m.id),
+    others,
     {
       title: receiver ? `🔒 Özel mesaj · ${user.name}` : `Genel · ${user.name}`,
       body: text ? clip(text) : fileNote,
       url: "/genel",
       tag: receiver ? `dm-${userId}` : "genel",
+      kind: receiver ? "dm" : "general",
     },
     userId,
   );
@@ -194,6 +211,32 @@ export async function deleteGeneralFile(fileId: string): Promise<GeneralResult> 
   if (message && !message.content.trim() && !count) {
     await supabase.from("general_messages").delete().eq("id", message_id);
   }
+
+  revalidateGeneral();
+  return { error: null };
+}
+
+// Mesajı düzenle: sadece yazan kişi; sadece içerik değişir. Alıcı değiştirilemez
+// (özel mesaj başkasına açılamaz); veritabanı kuralı da bunu zorunlu kılar.
+export async function editGeneralMessage(messageId: string, content: string): Promise<GeneralResult> {
+  await getUserId();
+  const text = String(content ?? "").trim();
+  if (!isUuid(messageId)) return { error: "Geçersiz mesaj." };
+  if (text.length > MAX_MESSAGE_LENGTH) return { error: "Mesaj çok uzun (en fazla 20.000 karakter)." };
+
+  const supabase = await createClient();
+  // Sadece dosyadan oluşan mesajın metni boşaltılabilir; metinli mesaj boş bırakılamaz
+  if (!text) {
+    const { data: files } = await supabase.from("general_files").select("id").eq("message_id", messageId).limit(1);
+    if (!files?.length) return { error: "Mesaj boş olamaz." };
+  }
+  const { data, error } = await supabase
+    .from("general_messages")
+    .update({ content: text })
+    .eq("id", messageId)
+    .select("id");
+  if (error) return { error: "Mesaj güncellenemedi." };
+  if (!data.length) return { error: "Sadece kendi mesajınızı düzenleyebilirsiniz." };
 
   revalidateGeneral();
   return { error: null };

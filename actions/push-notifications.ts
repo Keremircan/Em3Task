@@ -60,6 +60,6 @@ export async function sendTestPush(): Promise<PushResult> {
     body: "Görev atandığında, yorum veya revize geldiğinde bu cihaza haber vereceğiz.",
     url: "/gorevlerim",
     tag: "test",
-  });
+  }, undefined, { store: false });
   return { error: null };
 }

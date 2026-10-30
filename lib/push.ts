@@ -11,6 +11,11 @@ export type PushPayload = {
   body: string;
   url: string; // site içi yol, ör. /gorevler/<id>
   tag?: string; // aynı etiketli yeni bildirim eskisinin yerine geçer
+  kind?: string; // bildirim merkezindeki simge/tür (task, comment, mention, general, due…)
+};
+
+type NotifyOptions = {
+  store?: boolean; // bildirim merkezine kaydet (varsayılan: evet)
 };
 
 let configured: boolean | null = null;
@@ -60,22 +65,47 @@ async function deliver(userIds: string[], payload: PushPayload) {
   if (expired.length) await admin.from("push_subscriptions").delete().in("id", expired);
 }
 
+// Bildirim merkezine (🔔) kaydeder: telefon bildirimi izni olmayanlar da görür
+async function store(userIds: string[], payload: PushPayload, actorId: string | null) {
+  const admin = createAdminClient();
+  if (!admin || !userIds.length) return;
+  await admin.from("notifications").insert(
+    userIds.map((id) => ({
+      recipient_id: id,
+      actor_id: actorId,
+      kind: (payload.kind ?? "general").slice(0, 30),
+      title: payload.title.slice(0, 200),
+      body: payload.body.slice(0, 500),
+      url: payload.url.startsWith("/") ? payload.url.slice(0, 300) : "/",
+    })),
+  );
+}
+
 // Bildirimi hemen gönderir ve bitmesini bekler (zamanlanmış görevler için)
 export async function sendPushNow(userIds: string[], payload: PushPayload) {
   const ids = [...new Set(userIds.filter(Boolean))];
-  if (ids.length && isPushConfigured()) await deliver(ids, payload);
+  if (!ids.length) return;
+  await Promise.allSettled([store(ids, payload, null), isPushConfigured() ? deliver(ids, payload) : null]);
 }
 
 // Bildirimi yanıt gönderildikten sonra yollar: kullanıcının işlemi beklemez.
+// Hem bildirim merkezine kaydedilir hem (izin verenlere) telefona gider.
 // İşlemi yapan kişiye kendi bildirimi gitmez.
 export function notifyUsers(
   userIds: (string | null | undefined)[],
   payload: PushPayload,
   exceptUserId?: string,
+  options: NotifyOptions = {},
 ) {
   const ids = [...new Set(userIds.filter((id): id is string => Boolean(id) && id !== exceptUserId))];
-  if (!ids.length || !isPushConfigured()) return;
-  after(() => deliver(ids, payload).catch(() => {}));
+  if (!ids.length) return;
+  const keep = options.store !== false;
+  after(async () => {
+    await Promise.allSettled([
+      keep ? store(ids, payload, exceptUserId ?? null) : null,
+      isPushConfigured() ? deliver(ids, payload) : null,
+    ]);
+  });
 }
 
 // Bildirim metinleri kısa kalsın
