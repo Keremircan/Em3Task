@@ -8,6 +8,8 @@ import { previewText } from "@/lib/tasks";
 import { StatusBadge } from "./status-badge";
 import { PriorityControl } from "./priority-control";
 import { DueBadge } from "./due-badge";
+import { ChecklistBadge, LabelChips } from "./label-chip";
+import { checklistProgress, taskLabels, type LabelLite } from "@/lib/labels";
 import { RevisionBadge } from "./revision";
 import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
@@ -21,6 +23,8 @@ export type TaskListItem = {
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
+  labels?: { label: LabelLite | null }[];
+  checklist?: { is_done: boolean }[];
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -109,6 +113,8 @@ export function TaskList({
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
                 <DueBadge due={task.due_date} status={task.status} />
+                <ChecklistBadge {...checklistProgress(task.checklist)} />
+                <LabelChips labels={taskLabels(task.labels)} max={4} />
               </div>
               {task.description && (
                 <p className="mt-1 line-clamp-1 text-sm text-slate-500">

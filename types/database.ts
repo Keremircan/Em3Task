@@ -99,6 +99,35 @@ export type RemovedLink = {
   created_at: string;
 };
 
+// Kontrol listesi (alt görev) maddesi
+export type ChecklistItem = {
+  id: string;
+  task_id: string;
+  title: string;
+  is_done: boolean;
+  position: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type LabelColor =
+  | "slate" | "red" | "orange" | "amber" | "green" | "teal" | "sky" | "blue" | "violet" | "pink";
+
+export type Label = {
+  id: string;
+  name: string;
+  color: LabelColor;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type TaskLabel = {
+  task_id: string;
+  label_id: string;
+  added_by: string | null;
+  added_at: string;
+};
+
 // Teslim tarihi hatırlatmaları (sadece sunucu): görev başına her tür bir kez
 export type TaskReminder = {
   task_id: string;
@@ -252,6 +281,27 @@ export type Database = {
         [
           Rel<"member_roles_profile_id_fkey", "profile_id", "profiles">,
           Rel<"member_roles_role_id_fkey", "role_id", "roles">,
+        ]
+      >;
+      task_checklist_items: Table<
+        ChecklistItem,
+        Pick<ChecklistItem, "task_id" | "title"> & Partial<Omit<ChecklistItem, "task_id" | "title">>,
+        [
+          Rel<"task_checklist_items_task_id_fkey", "task_id", "tasks">,
+          Rel<"task_checklist_items_created_by_fkey", "created_by", "profiles">,
+        ]
+      >;
+      labels: Table<
+        Label,
+        Pick<Label, "name"> & Partial<Omit<Label, "name">>,
+        [Rel<"labels_created_by_fkey", "created_by", "profiles">]
+      >;
+      task_labels: Table<
+        TaskLabel,
+        Pick<TaskLabel, "task_id" | "label_id"> & Partial<Pick<TaskLabel, "added_by" | "added_at">>,
+        [
+          Rel<"task_labels_task_id_fkey", "task_id", "tasks">,
+          Rel<"task_labels_label_id_fkey", "label_id", "labels">,
         ]
       >;
       task_reminders: Table<

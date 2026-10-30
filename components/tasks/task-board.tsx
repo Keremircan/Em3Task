@@ -9,6 +9,8 @@ import { formatDateTime } from "@/lib/format";
 import { BOARD_COLUMNS, canRequestRevision, STATUS_DOTS } from "@/lib/tasks";
 import { PriorityControl } from "./priority-control";
 import { DueBadge } from "./due-badge";
+import { ChecklistBadge, LabelChips } from "./label-chip";
+import { checklistProgress, taskLabels, type LabelLite } from "@/lib/labels";
 import { RevisionBadge, RevisionDialog } from "./revision";
 import { OptimisticTasksProvider, useOptimisticTasks, useShownTasks } from "./optimistic-tasks";
 import { safe } from "@/lib/safe-action";
@@ -19,6 +21,8 @@ export type BoardTask = {
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
+  labels?: { label: LabelLite | null }[];
+  checklist?: { is_done: boolean }[];
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -81,6 +85,12 @@ function Columns({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
                     </span>
                   </div>
                   <Link href={`/gorevler/${task.id}`} className="block px-3 pb-3" tabIndex={-1}>
+                    {(task.labels?.length || task.checklist?.length) ? (
+                      <span className="mt-1.5 flex flex-wrap items-center gap-1">
+                        <ChecklistBadge {...checklistProgress(task.checklist)} />
+                        <LabelChips labels={taskLabels(task.labels)} />
+                      </span>
+                    ) : null}
                     <FromTo
                       from={task.creator?.full_name ?? "Eski üye"}
                       to={

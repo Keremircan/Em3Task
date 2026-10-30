@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { isUuid } from "@/lib/tasks";
 import { PriorityControl } from "@/components/tasks/priority-control";
 import { DueBadge } from "@/components/tasks/due-badge";
+import { TaskChecklist } from "@/components/tasks/task-checklist";
+import { LabelPicker } from "@/components/tasks/label-picker";
 import { dayKey, formatDateTime, formatDay } from "@/lib/format";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
 import { extractLinks, withoutRemoved } from "@/lib/links";
@@ -82,7 +84,17 @@ async function TaskDetail({
       }));
     });
 
-  const [user, taskRes, commentsRes, rawAttachments, formOptions, removedRes] = await Promise.all([
+  const [
+    user,
+    taskRes,
+    commentsRes,
+    rawAttachments,
+    formOptions,
+    removedRes,
+    checklistRes,
+    taskLabelsRes,
+    allLabelsRes,
+  ] = await Promise.all([
     getCurrentUser(),
     supabase
       .from("tasks")
@@ -107,6 +119,14 @@ async function TaskDetail({
     attachmentsWithLinks,
     getTaskFormOptions(),
     supabase.from("removed_links").select("url, created_at").eq("scope", id),
+    supabase
+      .from("task_checklist_items")
+      .select("id, title, is_done")
+      .eq("task_id", id)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase.from("task_labels").select("label_id").eq("task_id", id),
+    supabase.from("labels").select("id, name, color, created_by").order("name"),
   ]);
 
   const task = taskRes.data;
@@ -185,6 +205,15 @@ async function TaskDetail({
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
                 <DueBadge due={task.due_date} status={task.status} />
+              </div>
+              <div className="mt-2.5">
+                <LabelPicker
+                  taskId={task.id}
+                  assignedIds={(taskLabelsRes.data ?? []).map((l) => l.label_id)}
+                  allLabels={allLabelsRes.data ?? []}
+                  meId={user.id}
+                  isAdmin={user.isAdmin}
+                />
               </div>
               <h1 className="mt-3 text-2xl leading-tight font-bold tracking-tight text-slate-900 [overflow-wrap:anywhere]">
                 {task.title}
@@ -267,6 +296,18 @@ async function TaskDetail({
               <p className="text-slate-400">Bu görev için açıklama eklenmemiş.</p>
             )}
           </section>
+
+          {/* Görevi atayan, sorumlusu ve Admin düzenler; "Herkes" görevinde ekip */}
+          <TaskChecklist
+            taskId={task.id}
+            items={checklistRes.data ?? []}
+            canEdit={
+              task.created_by === user.id ||
+              task.assigned_to === user.id ||
+              task.assigned_to === null ||
+              user.isAdmin
+            }
+          />
 
           <div id="yorumlar" className="scroll-mt-20">
             <TaskComments

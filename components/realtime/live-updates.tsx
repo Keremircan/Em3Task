@@ -18,6 +18,9 @@ const TABLES = [
   "general_files",
   "removed_links",
   "message_reactions",
+  "task_checklist_items",
+  "labels",
+  "task_labels",
 ] as const;
 
 // Art arda gelen olayları tek yenilemede toplamak için bekleme süresi
@@ -28,7 +31,7 @@ const FRESH_MS = 10_000;
 type Status = "connecting" | "live" | "offline";
 
 // Satırı değiştiren kişiyi gösteren sütunlar (tablolara göre)
-const ACTOR_COLUMNS = ["user_id", "uploaded_by", "removed_by"] as const;
+const ACTOR_COLUMNS = ["user_id", "uploaded_by", "removed_by", "added_by"] as const;
 
 function isMine(row: unknown, myId: string) {
   if (!row || typeof row !== "object") return false;
