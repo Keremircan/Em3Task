@@ -1,6 +1,7 @@
 import { Download, ExternalLink, File, FileImage, FileText } from "lucide-react";
 import { card } from "@/components/ui/styles";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { ScrollList } from "@/components/ui/scroll-list";
 import { deleteTaskAttachment } from "@/actions/task-details";
 import { isImageType } from "@/lib/attachments";
 import { formatDate } from "@/lib/format";
@@ -34,11 +35,13 @@ export function TaskAttachments({
       </div>
 
       {attachments.length > 0 && (
-        <ul className="mb-4 space-y-2.5">
-          {attachments.map((a) => (
-            <AttachmentRow key={a.id} attachment={a} />
-          ))}
-        </ul>
+        <div className="mb-4">
+          <ScrollList count={attachments.length} label="Ekler ve Dosyalar" className="space-y-2.5">
+            {attachments.map((a) => (
+              <AttachmentRow key={a.id} attachment={a} />
+            ))}
+          </ScrollList>
+        </div>
       )}
 
       <AttachmentUpload taskId={taskId} />

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { card } from "@/components/ui/styles";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { ScrollList } from "@/components/ui/scroll-list";
 import { deleteGeneralFile } from "@/actions/general";
 import { formatBytes } from "@/lib/attachments";
 import { formatDate } from "@/lib/format";
@@ -57,7 +58,7 @@ export function GeneralDocuments({ documents }: { documents: GeneralDocument[] }
           Sohbette paylaşılan dokümanlar burada otomatik listelenir.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ScrollList count={documents.length} label="Dokümanlar">
           {documents.map((doc) => {
             const { icon: Icon, tone } = KIND_UI[kindOfMime(doc.file_type)];
             return (
@@ -110,7 +111,7 @@ export function GeneralDocuments({ documents }: { documents: GeneralDocument[] }
               </li>
             );
           })}
-        </ul>
+        </ScrollList>
       )}
     </section>
   );

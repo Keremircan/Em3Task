@@ -1,6 +1,7 @@
 import { BookOpen, ExternalLink, GitPullRequest, Globe, Link2, PenTool } from "lucide-react";
 import { card } from "@/components/ui/styles";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { ScrollList } from "@/components/ui/scroll-list";
 import { removeLink } from "@/actions/links";
 import type { ExtractedLink, LinkKind } from "@/lib/links";
 
@@ -39,7 +40,7 @@ export function TaskLinks({
           {emptyText}
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ScrollList count={links.length} label={title}>
           {links.map((link) => {
             const { icon: Icon, tone, name } = KIND_UI[link.kind];
             return (
@@ -80,7 +81,7 @@ export function TaskLinks({
               </li>
             );
           })}
-        </ul>
+        </ScrollList>
       )}
     </section>
   );
