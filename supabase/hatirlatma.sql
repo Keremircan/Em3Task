@@ -72,7 +72,7 @@ select cron.schedule(
   '0 6 * * *',
   $$
   select net.http_post(
-    url := 'https://em3task.netlify.app/api/cron/hatirlatma',
+    url := 'https://cfktask.netlify.app/api/cron/hatirlatma',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'em3task_cron_secret')
