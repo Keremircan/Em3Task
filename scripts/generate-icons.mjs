@@ -9,7 +9,8 @@
 //   app/apple-icon.png (180)                  → iPhone ana ekran (iOS köşeleri kendisi yuvarlar)
 //   app/icon.svg                              → tarayıcı sekmesi ikonu
 //   public/icons/logo-compact.svg             → uygulama içindeki küçük logo
-//   (son ikisinde işaret daha büyük: 16–28 px'te de okunsun)
+//   (son ikisinde işaret daha büyük ve tikin siyah çerçevesi yok: 16–40 px'te de
+//   okunsun, tikin yeşili yazı logosundaki "3" ile aynı görünsün)
 
 import { readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
@@ -42,7 +43,14 @@ await png(logo, 512, "public/icons/icon-512.png");
 await png(fullBleed(logo, 1.0), 512, "public/icons/maskable-512.png");
 await png(fullBleed(logo, 1.12), 180, "app/apple-icon.png");
 
-const compact = withScale(logo, 1.28);
+// Tikin siyah çerçevesini kaldırır (küçük boyutta yeşili karartıyor)
+const withoutCheckEdge = (svg) => {
+  const out = svg.replace(/\s*<path class="check-edge"[^>]*\/>/, "");
+  if (out === svg) throw new Error(`${SOURCE} içinde class="check-edge" bulunamadı`);
+  return out;
+};
+
+const compact = withoutCheckEdge(withScale(logo, 1.28));
 await writeFile("app/icon.svg", compact);
 await writeFile("public/icons/logo-compact.svg", compact);
 console.log("✓ app/icon.svg, public/icons/logo-compact.svg");

@@ -10,8 +10,8 @@
     <path fill="#0a0a0a" d="M160 367H300L276 397H191V424.5H280V454.5H191V482H296L272 512H160Z"/>
     <path fill="#0a0a0a" d="M323 367H409L439 397L411 433L434 456L398 492L384 478L406 456L404.5 454.5H313L337 424.5H380.6L402 397H299Z"/>
     <!-- Tik: önce 12 birim kalın siyah kontur, üstüne yeşil dolgu; konturun dışa taşan
-         6 biriminden ince siyah bir çerçeve kalır -->
-    <path fill="#0a0a0a" stroke="#0a0a0a" stroke-width="12" stroke-linejoin="round" d="M320 482H366L397 513L447 463H481L396 548L360 512H296Z"/>
+         6 biriminden ince siyah bir çerçeve kalır. Küçük logoda (uygulama içi, sekme
+         ikonu) çerçeve çıkarılır: 1–2 piksellik tikte yeşili karartıyordu -->
     <path fill="#2ce637" d="M320 482H366L397 513L447 463H481L396 548L360 512H296Z"/>
   </g>
 </svg>
