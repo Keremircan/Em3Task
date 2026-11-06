@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { CircleAlert, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { setNewPassword, type NewPasswordState } from "./actions";
 import { authError, authInput, authInputIcon, authLabel, authSubmit } from "@/components/auth/auth-shell";
@@ -10,6 +10,12 @@ const initialState: NewPasswordState = { error: null };
 export function NewPasswordForm({ email }: { email: string }) {
   const [state, formAction, pending] = useActionState(setNewPassword, initialState);
   const [show, setShow] = useState(false);
+
+  // Netlify, /auth/confirm yönlendirmesine e-postadaki sorguyu (token_hash) ekliyor.
+  // Kod zaten kullanılmış olsa da adres çubuğunda ve tarayıcı geçmişinde kalmasın.
+  useEffect(() => {
+    if (window.location.search) window.history.replaceState(null, "", window.location.pathname);
+  }, []);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

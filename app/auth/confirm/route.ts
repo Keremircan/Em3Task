@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
     ok = !error;
   }
 
-  // Tam adresle yönlendirilir: göreli adreste Netlify gelen sorguyu (token_hash dahil)
-  // hedefe ekliyor, kullanılmış kod adres çubuğunda ve tarayıcı geçmişinde kalıyordu.
+  // Not: Netlify, sorgusu olmayan hedefe gelen sorguyu (token_hash dahil) ekliyor;
+  // /sifre-yenile bunu tarayıcıda adres çubuğundan temizler (new-password-form.tsx).
   // Oturum cookie'leri (cookies() ile yazılanlar) bu yanıta Next.js tarafından eklenir.
   return NextResponse.redirect(new URL(ok ? next : "/sifremi-unuttum?hata=baglanti", request.nextUrl.origin));
 }
