@@ -1,0 +1,11 @@
+# Netlify derleme ayarları. Arayüzdeki "Build settings" yerine bunlar kullanılır;
+# böylece site hangi Netlify hesabına bağlanırsa bağlansın aynı şekilde derlenir.
+# Netlify, Next.js projesini tanıyıp .next çıktısını sunucu fonksiyonlarına çevirir.
+# Ortam değişkenleri (Supabase, VAPID, CRON_SECRET) burada değil, Netlify
+# arayüzünde tanımlanır; derlemeden önce eklenmiş olmalıdır.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
