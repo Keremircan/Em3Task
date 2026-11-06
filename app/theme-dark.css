@@ -6,18 +6,18 @@
 
 html.dark {
   color-scheme: dark;
-  --color-white: oklch(20.8% 0.042 265.755);
-  --app-canvas: oklch(16.5% 0.035 266);
-  --color-slate-50: oklch(27.9% 0.041 260.031);
-  --color-slate-100: oklch(31.5% 0.042 259);
-  --color-slate-200: oklch(37.2% 0.044 257.287);
-  --color-slate-300: oklch(44.6% 0.043 257.281);
-  --color-slate-400: oklch(55.4% 0.046 257.417);
-  --color-slate-500: oklch(70.4% 0.04 256.788);
-  --color-slate-600: oklch(86.9% 0.022 252.894);
-  --color-slate-700: oklch(92.9% 0.013 255.508);
-  --color-slate-800: oklch(96.8% 0.007 247.896);
-  --color-slate-900: oklch(98.4% 0.003 247.858);
+  --color-white: oklch(19% 0 0);
+  --app-canvas: oklch(14.5% 0 0);
+  --color-slate-50: oklch(23.5% 0 0);
+  --color-slate-100: oklch(27% 0 0);
+  --color-slate-200: oklch(33% 0 0);
+  --color-slate-300: oklch(43.9% 0 0);
+  --color-slate-400: oklch(55.6% 0 0);
+  --color-slate-500: oklch(70.8% 0 0);
+  --color-slate-600: oklch(87% 0 0);
+  --color-slate-700: oklch(92.2% 0 0);
+  --color-slate-800: oklch(97% 0 0);
+  --color-slate-900: oklch(98.5% 0 0);
   --color-slate-950: oklch(100% 0 0);
   --color-red-50: oklch(25.8% 0.092 26.042);
   --color-red-100: oklch(39.6% 0.141 25.723);
@@ -371,18 +371,18 @@ html.dark .theme-fixed {
 
 /* Sabit koyu alanın içinde açılıp temaya uyması gereken parçalar */
 html.dark .theme-fixed .theme-follow {
-  --color-white: oklch(20.8% 0.042 265.755);
-  --app-canvas: oklch(16.5% 0.035 266);
-  --color-slate-50: oklch(27.9% 0.041 260.031);
-  --color-slate-100: oklch(31.5% 0.042 259);
-  --color-slate-200: oklch(37.2% 0.044 257.287);
-  --color-slate-300: oklch(44.6% 0.043 257.281);
-  --color-slate-400: oklch(55.4% 0.046 257.417);
-  --color-slate-500: oklch(70.4% 0.04 256.788);
-  --color-slate-600: oklch(86.9% 0.022 252.894);
-  --color-slate-700: oklch(92.9% 0.013 255.508);
-  --color-slate-800: oklch(96.8% 0.007 247.896);
-  --color-slate-900: oklch(98.4% 0.003 247.858);
+  --color-white: oklch(19% 0 0);
+  --app-canvas: oklch(14.5% 0 0);
+  --color-slate-50: oklch(23.5% 0 0);
+  --color-slate-100: oklch(27% 0 0);
+  --color-slate-200: oklch(33% 0 0);
+  --color-slate-300: oklch(43.9% 0 0);
+  --color-slate-400: oklch(55.6% 0 0);
+  --color-slate-500: oklch(70.8% 0 0);
+  --color-slate-600: oklch(87% 0 0);
+  --color-slate-700: oklch(92.2% 0 0);
+  --color-slate-800: oklch(97% 0 0);
+  --color-slate-900: oklch(98.5% 0 0);
   --color-slate-950: oklch(100% 0 0);
   --color-red-50: oklch(25.8% 0.092 26.042);
   --color-red-100: oklch(39.6% 0.141 25.723);

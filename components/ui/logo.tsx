@@ -4,7 +4,7 @@ export function Logo({ size = 32, className = "" }: { size?: number; className?:
   return (
     // eslint-disable-next-line @next/next/no-img-element -- küçük, statik SVG; optimizasyona gerek yok
     <img
-      src="/icons/logo-compact.svg?v=4"
+      src="/icons/logo-compact.svg?v=5"
       alt=""
       width={size}
       height={size}

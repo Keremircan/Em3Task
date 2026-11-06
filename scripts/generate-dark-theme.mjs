@@ -25,18 +25,19 @@ const STEPS = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "90
 // kullanılırsa buraya eklenip betik yeniden çalıştırılmalı.
 const HUES = ["red", "orange", "amber", "yellow", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "pink", "rose"].filter((h) => vars[h]);
 
-// Koyu temada gri ve yüzey değerleri
+// Koyu temada gri ve yüzey değerleri: lacivert değil siyah tabanlı, renksiz griler
+// (sidebar ve üst/alt çubuklarla aynı aile, #141414)
 const SLATE_DARK = {
-  50: "oklch(27.9% 0.041 260.031)", // ~slate-800: kart içi hafif zemin, üzerine gelme
-  100: "oklch(31.5% 0.042 259)", // biraz daha açık
-  200: "oklch(37.2% 0.044 257.287)", // ~slate-700: kenarlıklar
-  300: "oklch(44.6% 0.043 257.281)", // ~slate-600
-  400: "oklch(55.4% 0.046 257.417)", // ~slate-500: örnek metin, ikon
-  500: "oklch(70.4% 0.04 256.788)", // ~slate-400: ikincil yazı
-  600: "oklch(86.9% 0.022 252.894)", // ~slate-300
-  700: "oklch(92.9% 0.013 255.508)", // ~slate-200
-  800: "oklch(96.8% 0.007 247.896)", // ~slate-100
-  900: "oklch(98.4% 0.003 247.858)", // ~slate-50: ana yazı
+  50: "oklch(23.5% 0 0)", // kart içi hafif zemin, üzerine gelme
+  100: "oklch(27% 0 0)", // biraz daha açık
+  200: "oklch(33% 0 0)", // kenarlıklar
+  300: "oklch(43.9% 0 0)",
+  400: "oklch(55.6% 0 0)", // örnek metin, ikon
+  500: "oklch(70.8% 0 0)", // ikincil yazı
+  600: "oklch(87% 0 0)",
+  700: "oklch(92.2% 0 0)",
+  800: "oklch(97% 0 0)",
+  900: "oklch(98.5% 0 0)", // ana yazı
   950: "oklch(100% 0 0)",
 };
 // Ana renk (turkuaz) koyu temada ters çevrilince çok parlak kalıyor ve göz yoruyor.
@@ -55,8 +56,8 @@ const TEAL_DARK = {
   900: "oklch(95% 0.008 210)",
   950: "oklch(98% 0.004 210)",
 };
-const SURFACE_DARK ="oklch(20.8% 0.042 265.755)"; // ~slate-900: kartlar (bg-white)
-const CANVAS_DARK = "oklch(16.5% 0.035 266)"; // sayfa zemini
+const SURFACE_DARK = "oklch(19% 0 0)"; // kartlar (bg-white), ~#141414
+const CANVAS_DARK = "oklch(14.5% 0 0)"; // sayfa zemini, ~#0a0a0a
 
 function invertedBlock() {
   const lines = [`  --color-white: ${SURFACE_DARK};`, `  --app-canvas: ${CANVAS_DARK};`];
