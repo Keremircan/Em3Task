@@ -16,7 +16,7 @@ import sharp from "sharp";
 
 const SOURCE = "public/icons/logo.svg";
 const logo = await readFile(SOURCE, "utf8");
-const BASE_SCALE = "scale(1.15)";
+const BASE_SCALE = "scale(1.08)";
 if (!logo.includes(BASE_SCALE)) throw new Error(`${SOURCE} içinde "${BASE_SCALE}" bulunamadı`);
 
 // İşaretin boyutunu değiştirir
@@ -40,9 +40,9 @@ await png(logo, 192, "public/icons/icon-192.png");
 await png(logo, 512, "public/icons/icon-512.png");
 // Maskable güvenli alan: merkezdeki %80'lik daire → işaret küçültülür
 await png(fullBleed(logo, 1.0), 512, "public/icons/maskable-512.png");
-await png(fullBleed(logo, 1.2), 180, "app/apple-icon.png");
+await png(fullBleed(logo, 1.12), 180, "app/apple-icon.png");
 
-const compact = withScale(logo, 1.38);
+const compact = withScale(logo, 1.28);
 await writeFile("app/icon.svg", compact);
 await writeFile("public/icons/logo-compact.svg", compact);
 console.log("✓ app/icon.svg, public/icons/logo-compact.svg");

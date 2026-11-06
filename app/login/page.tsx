@@ -18,7 +18,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-[360px]">
         <div className="mb-6 flex items-center justify-center gap-2.5">
-          <Logo size={36} className="rounded-[8px]" />
+          <Logo size={40} className="rounded-[9px]" />
           <Wordmark className="text-2xl text-slate-900" />
         </div>
 

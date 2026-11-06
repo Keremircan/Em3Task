@@ -3,7 +3,7 @@
 // Ekip verisi içeren sayfalar (görevler, sohbet, dosyalar) bilerek ÖNBELLEĞE ALINMAZ:
 // giriş gerektiren içerik cihazda saklanmasın ve her zaman güncel gelsin.
 
-const CACHE = "em3task-offline-v3"; // ad değişti: yeni logo ikonları önbelleğe yeniden alınsın
+const CACHE = "em3task-offline-v4"; // ad değişti: yeni logo ikonları önbelleğe yeniden alınsın
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL, "/icons/icon-192.png", "/icons/logo.svg"];
 

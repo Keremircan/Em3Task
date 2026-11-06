@@ -4,7 +4,9 @@
        scripts/generate-icons.mjs ile buradan üretilir. -->
   <rect class="tile" width="512" height="512" rx="116" fill="#ffffff"/>
   <rect class="edge" x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#e4e4e7" stroke-width="4"/>
-  <g class="mark" transform="translate(256 258) scale(1.38) translate(-320.5 -457.5)">
+  <!-- İşaret optik merkezinden (305, 448) ortalanır: ağır siyah E3 sol üstte, ince
+       sarı tik sağ altta olduğu için dış sınırlara göre ortalamak sola-yukarı kaymış gösterir -->
+  <g class="mark" transform="translate(256 256) scale(1.28) translate(-305 -448)">
     <path fill="#0a0a0a" d="M160 367H300L276 397H191V424.5H280V454.5H191V482H296L272 512H160Z"/>
     <path fill="#0a0a0a" d="M323 367H409L439 397L411 433L434 456L398 492L384 478L406 456L404.5 454.5H313L337 424.5H380.6L402 397H299Z"/>
     <path fill="#fdd96c" d="M320 482H366L397 513L447 463H481L396 548L360 512H296Z"/>
