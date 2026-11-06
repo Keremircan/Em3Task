@@ -45,3 +45,6 @@ supabase/data-import.sql
 
 # Gizli anahtar içeren, sadece yerelde çalıştırılacak SQL dosyaları
 supabase/yerel/
+
+# Netlify yerel derleme çıktısı
+.netlify
