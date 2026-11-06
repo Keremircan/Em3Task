@@ -9,3 +9,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Next.js çalışma zamanı: .next çıktısını sunucu fonksiyonlarına ve yönlendirme
+# kurallarına çevirir. Yeni bağlanan hesaplarda otomatik kurulmayabildiği için
+# açıkça belirtilir; yoksa .next ham dosya olarak yayınlanır ve her sayfa 404 verir.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
