@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
-import { Logo } from "@/components/ui/logo";
-import { Wordmark } from "@/components/ui/wordmark";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata: Metadata = {
   title: "Giriş Yap · Em3Task",
@@ -9,31 +8,12 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[var(--app-canvas)] px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
-      {/* Hafif nokta deseni: düz zemini kırar, dikkat dağıtmaz */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(15,23,42,0.07)_1px,transparent_1px)] [background-size:18px_18px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
-      />
-
-      <div className="relative w-full max-w-[360px]">
-        <div className="mb-6 flex items-center justify-center gap-2.5">
-          <Logo size={40} className="rounded-[9px]" />
-          <Wordmark className="text-2xl text-slate-900" />
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.12)]">
-          <h1 className="text-lg font-semibold tracking-tight text-slate-900">Giriş yapın</h1>
-          <p className="mt-1 mb-5 text-[13px] text-slate-500">
-            Devam etmek için ekip hesabınızı kullanın.
-          </p>
-          <LoginForm />
-        </div>
-
-        <p className="mt-5 text-center text-xs text-slate-400">
-          Hesaplar yönetici tarafından oluşturulur.
-        </p>
-      </div>
-    </main>
+    <AuthShell
+      title="Giriş yapın"
+      description="Devam etmek için ekip hesabınızı kullanın."
+      footer="Hesaplar yönetici tarafından oluşturulur."
+    >
+      <LoginForm />
+    </AuthShell>
   );
 }
