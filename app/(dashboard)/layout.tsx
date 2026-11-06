@@ -9,6 +9,7 @@ import { UserMenu } from "./_components/user-menu";
 import { MobileTabBar, MobileTabBarList } from "./_components/mobile-tab-bar";
 import { MobilePageTitle, MobileTitleText } from "./_components/mobile-page-title";
 import { Logo } from "@/components/ui/logo";
+import { Wordmark } from "@/components/ui/wordmark";
 import { SidebarFooter, SidebarFooterSkeleton } from "./_components/sidebar-footer";
 import { PresencePing } from "@/components/realtime/presence-ping";
 import { SidebarSearch } from "./_components/sidebar-search";
@@ -35,9 +36,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-4">
           <span className="flex min-w-0 items-center gap-2">
             <Logo size={26} className="rounded-[7px]" />
-            <span className="truncate text-[15px] font-semibold tracking-tight text-white">
-              Em3Task
-            </span>
+            <Wordmark className="text-[17px] text-white" />
           </span>
           <span className="flex items-center gap-1.5">
             <Suspense fallback={<div className="size-8" />}>
