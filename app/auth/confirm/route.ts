@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { safeNextPath } from "@/lib/recovery";
 
@@ -27,6 +26,8 @@ export async function GET(request: NextRequest) {
     ok = !error;
   }
 
-  // redirect() hata fırlatarak çalışır; try/catch içine koymayın.
-  redirect(ok ? next : "/sifremi-unuttum?hata=baglanti");
+  // Tam adresle yönlendirilir: göreli adreste Netlify gelen sorguyu (token_hash dahil)
+  // hedefe ekliyor, kullanılmış kod adres çubuğunda ve tarayıcı geçmişinde kalıyordu.
+  // Oturum cookie'leri (cookies() ile yazılanlar) bu yanıta Next.js tarafından eklenir.
+  return NextResponse.redirect(new URL(ok ? next : "/sifremi-unuttum?hata=baglanti", request.nextUrl.origin));
 }

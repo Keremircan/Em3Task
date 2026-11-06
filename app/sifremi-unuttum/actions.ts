@@ -31,7 +31,16 @@ export async function requestPasswordReset(
 
   if (error) {
     if (error.status === 429 || error.code === "over_email_send_rate_limit") {
-      return { error: "Çok fazla istek yapıldı. Birkaç dakika bekleyip tekrar deneyin.", sent: false, email };
+      // Aynı hesap için 60 saniyede bir istek yapılabilir; ayrıca Supabase'in kendi
+      // e-posta servisi tüm projede saatte birkaç e-postayla sınırlıdır
+      const perUser = /only request this after/i.test(error.message);
+      return {
+        error: perUser
+          ? "Az önce bağlantı istendi. Bir dakika bekleyip tekrar deneyin."
+          : "E-posta gönderme sınırına ulaşıldı. Bir süre (en fazla 1 saat) sonra tekrar deneyin.",
+        sent: false,
+        email,
+      };
     }
     return { error: "Bağlantı gönderilemedi. Lütfen tekrar deneyin.", sent: false, email };
   }
