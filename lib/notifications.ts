@@ -12,7 +12,8 @@ export type NotificationItem = {
   created_at: string;
 };
 
-// Oturumdaki kullanıcının son bildirimleri ve okunmamış sayısı (RLS: sadece kendisi).
+// Oturumdaki kullanıcının okunmamış bildirimleri ve sayısı (RLS: sadece kendisi).
+// Okunan bildirim silinir; eskiden okundu işaretlenip kalmış olanlar da gösterilmez.
 // Masaüstü ve mobil zil aynı istekte kullanır; tek sorgu atılır.
 export const getNotifications = cache(async () => {
   const supabase = await createClient();
@@ -20,6 +21,7 @@ export const getNotifications = cache(async () => {
     supabase
       .from("notifications")
       .select("id, kind, title, body, url, read_at, created_at")
+      .is("read_at", null)
       .order("created_at", { ascending: false })
       .limit(30),
     supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null),

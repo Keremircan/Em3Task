@@ -7,30 +7,23 @@ import { isUuid } from "@/lib/tasks";
 
 export type NotificationResult = { error: string | null };
 
-// Okundu işaretle (RLS: sadece kendi bildirimi; sadece okundu bilgisi değişebilir)
-export async function markNotificationRead(id: string): Promise<NotificationResult> {
+// Okunan bildirim silinir (RLS: kişi sadece kendi bildirimini silebilir)
+export async function dismissNotification(id: string): Promise<NotificationResult> {
   await getUserId();
   if (!isUuid(id)) return { error: "Geçersiz bildirim." };
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read_at: new Date().toISOString() })
-    .eq("id", id)
-    .is("read_at", null);
-  if (error) return { error: "Bildirim güncellenemedi." };
+  const { error } = await supabase.from("notifications").delete().eq("id", id);
+  if (error) return { error: "Bildirim silinemedi." };
   revalidatePath("/", "layout");
   return { error: null };
 }
 
-export async function markAllNotificationsRead(): Promise<NotificationResult> {
+// Tümünü okundu say: kişinin bütün bildirimleri silinir
+export async function clearAllNotifications(): Promise<NotificationResult> {
   const userId = await getUserId();
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read_at: new Date().toISOString() })
-    .eq("recipient_id", userId)
-    .is("read_at", null);
-  if (error) return { error: "Bildirimler güncellenemedi." };
+  const { error } = await supabase.from("notifications").delete().eq("recipient_id", userId);
+  if (error) return { error: "Bildirimler silinemedi." };
   revalidatePath("/", "layout");
   return { error: null };
 }
