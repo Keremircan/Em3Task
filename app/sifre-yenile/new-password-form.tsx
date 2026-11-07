@@ -1,24 +1,27 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { CircleAlert, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { setNewPassword, type NewPasswordState } from "./actions";
 import { authError, authInput, authInputIcon, authLabel, authSubmit } from "@/components/auth/auth-shell";
 
 const initialState: NewPasswordState = { error: null };
 
-export function NewPasswordForm({ email }: { email: string }) {
+export function NewPasswordForm({ email, tokenHash }: { email: string; tokenHash: string }) {
   const [state, formAction, pending] = useActionState(setNewPassword, initialState);
   const [show, setShow] = useState(false);
 
-  // Netlify, /auth/confirm yönlendirmesine e-postadaki sorguyu (token_hash) ekliyor.
-  // Kod zaten kullanılmış olsa da adres çubuğunda ve tarayıcı geçmişinde kalmasın.
+  // E-postadaki kod (token_hash) formda saklanır; adres çubuğunda ve tarayıcı
+  // geçmişinde kalmasın. Sayfa yenilenirse bağlantı e-postadan tekrar açılabilir
+  // (kod şifre kaydedilene kadar harcanmaz).
   useEffect(() => {
     if (window.location.search) window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {tokenHash && <input type="hidden" name="token_hash" value={tokenHash} />}
       {/* Şifre yöneticileri yeni şifreyi doğru hesaba kaydetsin */}
       <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
 
@@ -58,7 +61,17 @@ export function NewPasswordForm({ email }: { email: string }) {
 
       <p role="alert" aria-live="polite" className={state.error ? authError : "sr-only"}>
         {state.error && <CircleAlert className="mt-0.5 size-4 shrink-0" />}
-        {state.error}
+        <span>
+          {state.error}
+          {state.expired && (
+            <>
+              {" "}
+              <Link href="/sifremi-unuttum" className="font-semibold underline underline-offset-2">
+                Yeni bağlantı iste
+              </Link>
+            </>
+          )}
+        </span>
       </p>
 
       <button type="submit" disabled={pending} className={authSubmit}>

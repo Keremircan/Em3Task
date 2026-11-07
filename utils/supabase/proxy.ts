@@ -3,9 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
 // Giriş gerektirmeyen yollar. /api/cron: zamanlanmış görevler (oturum yerine
-// gizli anahtarla korunur, bkz. app/api/cron). /sifremi-unuttum ve /auth/confirm:
-// şifre sıfırlama (bağlantı doğrulanınca oturum açılır, /sifre-yenile'ye geçilir)
-const PUBLIC_PATHS = ["/login", "/api/cron", "/sifremi-unuttum", "/auth/confirm"];
+// gizli anahtarla korunur, bkz. app/api/cron). /sifremi-unuttum, /auth/confirm ve
+// /sifre-yenile: şifre sıfırlama (e-postadaki kod, yeni şifre kaydedilirken doğrulanır)
+const PUBLIC_PATHS = ["/login", "/api/cron", "/sifremi-unuttum", "/auth/confirm", "/sifre-yenile"];
 
 // Her istekte oturumu yeniler; giriş yoksa /login'e yönlendirir.
 export async function updateSession(request: NextRequest) {
