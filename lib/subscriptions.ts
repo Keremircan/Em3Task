@@ -4,12 +4,13 @@ import type { Currency, Subscription, SubscriptionCategory, SubscriptionPeriod }
 import { addDays, daysBetween, isDayString, shortDay } from "@/lib/due";
 import { parseProjectUrl } from "@/lib/project-url";
 
-export const CATEGORIES: { value: SubscriptionCategory; label: string }[] = [
-  { value: "ai_saas", label: "AI / SaaS Abonelikleri" },
-  { value: "server_domain", label: "Sunucu & Domain" },
-  { value: "telecom", label: "Ev/Cep İnterneti & GSM" },
-  { value: "bank_card", label: "Banka & Kredi Kartı" },
-  { value: "other", label: "Diğer" },
+// label: formdaki tam ad · short: filtre haplarında ve kart rozetinde
+export const CATEGORIES: { value: SubscriptionCategory; label: string; short: string }[] = [
+  { value: "ai_saas", label: "AI / SaaS Abonelikleri", short: "AI & Yazılım" },
+  { value: "server_domain", label: "Sunucu & Domain", short: "Sunucu & Domain" },
+  { value: "telecom", label: "Ev/Cep İnterneti & GSM", short: "İnternet & GSM" },
+  { value: "bank_card", label: "Banka & Kredi Kartı", short: "Banka & Kart" },
+  { value: "other", label: "Diğer", short: "Diğer" },
 ];
 
 export const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label])) as Record<
@@ -77,11 +78,17 @@ export function moneyInputValue(amount: number | null | undefined): string {
   return Number.isInteger(amount) ? String(amount) : amount.toFixed(2).replace(".", ",");
 }
 
-// Para birimine göre toplamlar: "₺1.250 · $40"
+// Para birimine göre toplamlar: "₺1.250 + $40"
 export function formatTotals(totals: Map<Currency, number>): string {
   return CURRENCIES.filter((c) => totals.has(c))
     .map((c) => formatMoney(totals.get(c)!, c))
-    .join(" · ");
+    .join(" + ");
+}
+
+export function sumByCurrency(entries: [Currency, number][]): Map<Currency, number> {
+  const totals = new Map<Currency, number>();
+  for (const [currency, value] of entries) totals.set(currency, (totals.get(currency) ?? 0) + value);
+  return totals;
 }
 
 // ---------------------------------------------------------------------
@@ -118,21 +125,34 @@ export function nextYearlyDate(date: string, today: string): string {
   return addDays(today, 365); // buraya düşmez
 }
 
+// renewal: yenilenme · payment: kart son ödemesi · ends: iptal edilecek, o gün biter
+// expired: sunucu/domain tarihi geçti
 export type DueKind = "renewal" | "ends" | "payment" | "expired";
-export type DueTone = "overdue" | "soon" | "near" | "later" | "muted";
-export type NextDue = { day: string; days: number; kind: DueKind; label: string; tone: DueTone };
+// danger: bugün ya da geçti (kırmızı) · warning: 3 günden az (sarı) · near: bu hafta
+export type DueTone = "danger" | "warning" | "near" | "later" | "muted";
+export type NextDue = { day: string; days: number; kind: DueKind; label: string; tone: DueTone; date: string };
 
 // "12 Kas"; başka bir yıldaysa "12 Kas 2027"
-function dateLabel(day: string, today: string): string {
+export function dateLabel(day: string, today: string): string {
   return day.slice(0, 4) === today.slice(0, 4) ? shortDay(day) : `${shortDay(day)} ${day.slice(0, 4)}`;
 }
 
-function dueLabel(days: number, day: string, today: string): string {
-  if (days < 0) return `${-days} gün geçti`;
-  if (days === 0) return "Bugün";
+// Kalan gün sayacı: "Bugün yenileniyor!", "Yarın", "3 gün kaldı", "14 gün sonra"
+function dueLabel(kind: DueKind, days: number): string {
+  if (kind === "expired") return `${-days} gün geçti`;
+  if (kind === "ends") return days === 0 ? "Bugün bitiyor" : days === 1 ? "Yarın bitiyor" : `${days} gün sonra bitiyor`;
+  if (days === 0) return kind === "payment" ? "Son ödeme bugün!" : "Bugün yenileniyor!";
   if (days === 1) return "Yarın";
-  if (days <= 30) return `${days} gün kaldı`;
-  return dateLabel(day, today);
+  if (days <= 7) return `${days} gün kaldı`;
+  return `${days} gün sonra`;
+}
+
+function dueTone(kind: DueKind, days: number): DueTone {
+  if (kind === "ends") return "muted";
+  if (days <= 0) return "danger";
+  if (days < 3) return "warning";
+  if (days <= 7) return "near";
+  return "later";
 }
 
 // Kaydın sıradaki önemli tarihi: yenilenme, son ödeme ya da (iptal edilecekse) bitiş
@@ -163,10 +183,12 @@ export function nextDue(s: Subscription, today: string): NextDue | null {
   if (!day) return null;
 
   const days = daysBetween(today, day);
-  const tone: DueTone =
-    kind === "ends" ? "muted" : days < 0 ? "overdue" : days <= 3 ? "soon" : days <= 7 ? "near" : "later";
-  const label = kind === "ends" ? `${dateLabel(day, today)} bitiyor` : dueLabel(days, day, today);
-  return { day, days, kind, label, tone };
+  return { day, days, kind, label: dueLabel(kind, days), tone: dueTone(kind, days), date: dateLabel(day, today) };
+}
+
+// Önümüzdeki n gün içinde ödemesi olan kayıt mı (iptal edilecekler ödeme yapmaz)
+export function isPaymentWithin(due: NextDue | null, n: number): boolean {
+  return !!due && (due.kind === "renewal" || due.kind === "payment") && due.days >= 0 && due.days <= n;
 }
 
 // Taahhüt bitişi yaklaşıyorsa (60 gün) ya da geçtiyse uyarı metni

@@ -59,14 +59,20 @@ async function Subscriptions() {
 function SubscriptionsSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className={`${card} col-span-2 h-[84px] sm:col-span-1`} />
-        <div className={`${card} h-[84px]`} />
-        <div className={`${card} h-[84px]`} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className={`${card} h-[88px]`} />
+        <div className={`${card} h-[88px]`} />
+        <div className={`${card} h-[88px]`} />
+        <div className={`${card} h-[88px]`} />
       </div>
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className={`${card} h-48`} />
-        <div className={`${card} h-48`} />
+      <div className="mt-5 flex gap-2">
+        <div className="h-8 w-20 rounded-full bg-slate-200/70" />
+        <div className="h-8 w-28 rounded-full bg-slate-200/70" />
+        <div className="h-8 w-32 rounded-full bg-slate-200/70" />
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
+        <div className={`${card} h-56`} />
+        <div className={`${card} h-56`} />
       </div>
     </div>
   );
