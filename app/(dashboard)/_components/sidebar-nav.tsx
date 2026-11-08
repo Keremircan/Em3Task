@@ -16,6 +16,7 @@ import {
   Plus,
   UserRound,
   Users,
+  WalletCards,
 } from "lucide-react";
 import type { ProjectSummary } from "@/lib/projects";
 import { createProject } from "@/actions/projects";
@@ -33,6 +34,7 @@ const MAIN_LINKS = [
   { href: "/raporlar", label: "Raporlar", icon: ChartColumn },
   { href: "/uyeler", label: "Üyeler", icon: Users },
   { href: "/todo", label: "Yapılacaklar", icon: ListTodo },
+  { href: "/abonelikler", label: "Abonelikler", icon: WalletCards },
   { href: "/profil", label: "Profil", icon: UserRound },
 ];
 

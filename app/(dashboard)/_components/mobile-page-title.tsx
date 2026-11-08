@@ -9,6 +9,7 @@ const TITLES: Record<string, string> = {
   "/gorevlerim": "Görevlerim",
   "/uyeler": "Üyeler",
   "/todo": "Yapılacaklar",
+  "/abonelikler": "Abonelikler",
   "/takvim": "Takvim",
   "/ara": "Arama",
   "/raporlar": "Raporlar",
@@ -35,7 +36,7 @@ export function MobileTitleText({ label, title }: { label: string; title: string
 }
 
 function titleFor(pathname: string, projects: Project[]) {
-  if (pathname === "/todo") return { label: "KİŞİSEL", title: TITLES[pathname] };
+  if (pathname === "/todo" || pathname === "/abonelikler") return { label: "KİŞİSEL", title: TITLES[pathname] };
   if (TITLES[pathname]) return { label: "PANO", title: TITLES[pathname] };
   const project = pathname.match(/^\/projeler\/([^/]+)/);
   if (project) {

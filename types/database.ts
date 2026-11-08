@@ -222,6 +222,40 @@ export type PersonalTodo = {
   created_at: string;
 };
 
+// Abonelikler ve düzenli giderler: sadece sahibi görür (RLS). supabase/abonelikler.sql
+export type SubscriptionCategory = "ai_saas" | "server_domain" | "telecom" | "bank_card" | "other";
+export type SubscriptionPeriod = "monthly" | "yearly";
+export type Currency = "TRY" | "USD" | "EUR";
+
+export type Subscription = {
+  id: string;
+  user_id: string;
+  category: SubscriptionCategory;
+  name: string;
+  provider: string | null;
+  plan_name: string | null;
+  service_no: string | null;
+  account_email: string | null;
+  period: SubscriptionPeriod | null;
+  renewal_day: number | null; // aylıkta ayın kaçı; GSM'de fatura kesim günü
+  renewal_date: string | null; // "YYYY-MM-DD"
+  auto_renew: boolean | null;
+  cancel_at_period_end: boolean;
+  cancel_url: string | null;
+  has_commitment: boolean | null;
+  contract_start: string | null;
+  contract_end: string | null;
+  statement_day: number | null;
+  due_day: number | null;
+  current_debt: number | null;
+  minimum_payment: number | null;
+  amount: number | null;
+  currency: Currency;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // ---------------------------------------------------------------------
 // Supabase istemcisine verilen şema tipi (sorgular otomatik tiplenir)
 // ---------------------------------------------------------------------
@@ -388,6 +422,10 @@ export type Database = {
       personal_todos: Table<
         PersonalTodo,
         Pick<PersonalTodo, "title"> & Partial<Omit<PersonalTodo, "title">>
+      >;
+      subscriptions: Table<
+        Subscription,
+        Pick<Subscription, "category" | "name"> & Partial<Omit<Subscription, "category" | "name">>
       >;
       removed_links: Table<
         RemovedLink,
