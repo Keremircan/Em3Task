@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { sendPushNow } from "@/lib/push";
 import { todayKey } from "@/lib/days";
 import { addDays, shortDay } from "@/lib/due";
+import { sendSubscriptionReminders } from "@/lib/subscription-reminders";
 
 // Teslim tarihi hatırlatmaları. Supabase (pg_cron) her sabah bu adresi çağırır
 // (bkz. supabase/hatirlatma.sql). Oturum yoktur; istek CRON_SECRET ile korunur.
@@ -11,6 +12,7 @@ import { addDays, shortDay } from "@/lib/due";
 //   bugün teslim  → sorumluya
 //   gecikti       → sorumluya ve atayana
 // Sorumlu "Herkes" ise (henüz kimse almadıysa) atayana gider.
+// Ayrıca abonelikler: yenileme, son ödeme, bitiş ya da taahhüt sonu yarınsa sahibine.
 // Her hatırlatma görev başına bir kez gider (task_reminders); teslim tarihi
 // değişince veritabanı bu kayıtları siler ve hatırlatmalar yeniden başlar.
 
@@ -36,17 +38,23 @@ export async function POST(request: NextRequest) {
   const today = todayKey();
   const tomorrow = addDays(today, 1);
 
+  // Abonelikler: bir gün kala sadece sahibine (bkz. lib/subscription-reminders).
+  // Görevlerden bağımsız çalışır; biri hata verse de diğeri gönderilir.
+  const subscriptions = await sendSubscriptionReminders(admin, today).catch(() => ({
+    error: "Abonelik hatırlatmaları gönderilemedi.",
+  }));
+
   const { data: tasks, error } = await admin
     .from("tasks")
     .select("id, title, due_date, assigned_to, created_by")
     .neq("status", "done")
     .not("due_date", "is", null)
     .lte("due_date", tomorrow);
-  if (error) return NextResponse.json({ error: "Görevler okunamadı." }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Görevler okunamadı.", subscriptions }, { status: 500 });
 
   const kindOf = (due: string): Kind => (due === tomorrow ? "tomorrow" : due === today ? "today" : "overdue");
   const candidates = (tasks ?? []).map((t) => ({ ...t, kind: kindOf(t.due_date!) }));
-  if (!candidates.length) return NextResponse.json({ checked: 0, sent: 0 });
+  if (!candidates.length) return NextResponse.json({ checked: 0, sent: 0, subscriptions });
 
   const { data: sentRows } = await admin
     .from("task_reminders")
@@ -88,5 +96,5 @@ export async function POST(request: NextRequest) {
     sent++;
   }
 
-  return NextResponse.json({ checked: candidates.length, sent });
+  return NextResponse.json({ checked: candidates.length, sent, subscriptions });
 }

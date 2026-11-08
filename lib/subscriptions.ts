@@ -147,10 +147,11 @@ function dueLabel(kind: DueKind, days: number): string {
   return `${days} gün sonra`;
 }
 
+// İptal edilecekler de bugün/yarın bitiyorsa uyarı renginde: son iptal fırsatı
 function dueTone(kind: DueKind, days: number): DueTone {
-  if (kind === "ends") return "muted";
   if (days <= 0) return "danger";
   if (days < 3) return "warning";
+  if (kind === "ends") return "muted";
   if (days <= 7) return "near";
   return "later";
 }
@@ -198,6 +199,72 @@ export function contractNotice(s: Subscription, today: string): string | null {
   if (days < 0) return "Taahhüt bitti";
   if (days <= 60) return `Taahhüt ${days === 0 ? "bugün" : `${days} gün sonra`} bitiyor`;
   return null;
+}
+
+// ---------------------------------------------------------------------
+// Bir gün kala hatırlatmalar (her sabah çalışan zamanlanmış görev gönderir)
+// ---------------------------------------------------------------------
+
+// due: yenilenme / son ödeme / iptal edilenin bitişi · contract: taahhüt bitişi
+export type ReminderKind = "due" | "contract";
+export type SubscriptionReminder = {
+  subscription: Subscription;
+  kind: ReminderKind;
+  on: string; // hatırlatılan gün ("YYYY-MM-DD"); aynı gün için bir kez gönderilir
+  title: string;
+  body: string;
+};
+
+function clipName(name: string): string {
+  return name.length > 80 ? `${name.slice(0, 79)}…` : name;
+}
+
+// Yarın (bugünden 1 gün sonra) olan yenilemeler, son ödemeler, bitişler ve taahhüt sonları
+export function remindersFor(subscriptions: Subscription[], today: string): SubscriptionReminder[] {
+  const out: SubscriptionReminder[] = [];
+  for (const s of subscriptions) {
+    const name = clipName(s.name);
+    const price = s.amount !== null ? formatMoney(s.amount, s.currency) : null;
+    const due = nextDue(s, today);
+
+    if (due && due.days === 1 && due.kind !== "expired") {
+      let title: string;
+      let body: string;
+      if (due.kind === "ends") {
+        title = `Yarın bitiyor: ${name}`;
+        body = "Dönem sonunda iptal olarak işaretli. Henüz iptal etmediyseniz bugün iptal edin, yoksa yenilenir.";
+      } else if (due.kind === "payment") {
+        title = `Yarın son ödeme: ${name}`;
+        const parts = [`Son ödeme: ${due.date}`];
+        if (s.current_debt !== null) parts.push(`Borç: ${formatMoney(s.current_debt, s.currency)}`);
+        if (s.minimum_payment !== null) parts.push(`Asgari: ${formatMoney(s.minimum_payment, s.currency)}`);
+        body = parts.join(" · ");
+      } else if (s.category === "telecom") {
+        title = `Yarın fatura günü: ${name}`;
+        body = [`Fatura kesimi: ${due.date}`, price && `Aylık ücret: ${price}`].filter(Boolean).join(" · ");
+      } else if (s.category === "server_domain" && s.auto_renew === false) {
+        title = `Yarın sona eriyor: ${name}`;
+        body = ["Otomatik yenileme kapalı; süre bitmeden yenileyin.", price && `Ücret: ${price}`]
+          .filter(Boolean)
+          .join(" ");
+      } else {
+        title = `Yarın yenileniyor: ${name}`;
+        body = [`Yenilenme: ${due.date}`, price && `Tutar: ${price}`].filter(Boolean).join(" · ");
+      }
+      out.push({ subscription: s, kind: "due", on: due.day, title, body });
+    }
+
+    if (s.category === "telecom" && s.has_commitment && s.contract_end && daysBetween(today, s.contract_end) === 1) {
+      out.push({
+        subscription: s,
+        kind: "contract",
+        on: s.contract_end,
+        title: `Taahhüt yarın bitiyor: ${name}`,
+        body: `Kontrat bitişi: ${dateLabel(s.contract_end, today)}. Tarifenizi gözden geçirmek için iyi bir zaman.`,
+      });
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------

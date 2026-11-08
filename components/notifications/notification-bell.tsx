@@ -13,6 +13,7 @@ import {
   MessagesSquare,
   RotateCcw,
   Send,
+  WalletCards,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
   general: { icon: MessagesSquare, tone: "bg-teal-100 text-teal-700" },
   dm: { icon: Lock, tone: "bg-amber-100 text-amber-800" },
   due: { icon: CalendarClock, tone: "bg-rose-100 text-rose-700" },
+  subscription: { icon: WalletCards, tone: "bg-emerald-100 text-emerald-700" },
 };
 
 type Op = { type: "remove"; id: string } | { type: "clear" };

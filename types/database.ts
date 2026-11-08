@@ -256,6 +256,14 @@ export type Subscription = {
   updated_at: string;
 };
 
+// Gönderilen abonelik hatırlatmaları (sadece sunucu okur/yazar). supabase/abonelik-hatirlatma.sql
+export type SubscriptionReminderRow = {
+  subscription_id: string;
+  kind: "due" | "contract";
+  due_on: string; // "YYYY-MM-DD"
+  sent_at: string;
+};
+
 // ---------------------------------------------------------------------
 // Supabase istemcisine verilen şema tipi (sorgular otomatik tiplenir)
 // ---------------------------------------------------------------------
@@ -426,6 +434,12 @@ export type Database = {
       subscriptions: Table<
         Subscription,
         Pick<Subscription, "category" | "name"> & Partial<Omit<Subscription, "category" | "name">>
+      >;
+      subscription_reminders: Table<
+        SubscriptionReminderRow,
+        Pick<SubscriptionReminderRow, "subscription_id" | "kind" | "due_on"> &
+          Partial<Pick<SubscriptionReminderRow, "sent_at">>,
+        [Rel<"subscription_reminders_subscription_id_fkey", "subscription_id", "subscriptions">]
       >;
       removed_links: Table<
         RemovedLink,
