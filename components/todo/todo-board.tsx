@@ -27,7 +27,6 @@ import { card, field, primaryButton } from "@/components/ui/styles";
 import { SelectField } from "@/components/ui/select-field";
 import { Menu } from "@/components/ui/menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useCollapsed } from "@/components/ui/use-collapsed";
 import { safe } from "@/lib/safe-action";
 
 type Todo = Pick<PersonalTodo, "id" | "title" | "category" | "is_completed" | "created_at">;
@@ -69,6 +68,8 @@ export function TodoBoard({ todos, projectNames }: { todos: Todo[]; projectNames
   const [list, apply] = useOptimistic(todos, reduce);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Sayfa açılışında var olan başlıklar kapalı gelir; sonradan açılan yeni başlık açık başlar
+  const [loaded] = useState(() => new Set(todos.map((t) => t.category)));
 
   const run: Run = (op, action) => {
     setError(null);
@@ -127,6 +128,7 @@ export function TodoBoard({ todos, projectNames }: { todos: Todo[]; projectNames
               isProject={category !== null && projectNames.includes(category)}
               run={run}
               onAdd={(title) => add(title, category)}
+              startCollapsed={loaded.has(category)}
             />
           ))}
         </div>
@@ -270,12 +272,14 @@ function TodoGroup({
   isProject,
   run,
   onAdd,
+  startCollapsed,
 }: {
   category: string | null;
   items: Todo[];
   isProject: boolean;
   run: Run;
   onAdd: (title: string) => void;
+  startCollapsed: boolean;
 }) {
   const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -284,8 +288,9 @@ function TodoGroup({
   // Bitmemişler üstte, tamamlananlar altta
   const sorted = [...items.filter((t) => !t.is_completed), ...items.filter((t) => t.is_completed)];
   const label = category ?? NONE_LABEL;
-  // Başlığa tıklayınca maddeler gizlenir; bu tarayıcıda hatırlanır
-  const [collapsed, toggle] = useCollapsed(`todo:${category ?? NONE}`);
+  // Başlığa tıklayınca maddeler açılır/gizlenir
+  const [collapsed, setCollapsed] = useState(startCollapsed);
+  const toggle = () => setCollapsed((c) => !c);
   const bodyId = useId();
 
   const icon = isProject ? (

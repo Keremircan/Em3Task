@@ -1,8 +1,7 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { CalendarClock, ChevronDown, FolderKanban, MessageSquare, UserRound } from "lucide-react";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { formatDateTime } from "@/lib/format";
@@ -17,7 +16,6 @@ import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
 import { useShownTasks } from "./optimistic-tasks";
 import { card } from "@/components/ui/styles";
-import { useCollapsed } from "@/components/ui/use-collapsed";
 
 export type TaskListItem = {
   id: string;
@@ -77,7 +75,7 @@ export function TaskSection({
   );
 }
 
-// Başlığa tıklayınca açılıp kapanan kart; durum sayfa + başlık adıyla saklanır
+// Başlığa tıklayınca açılıp kapanan kart; sayfa her açıldığında kapalı gelir
 function CollapsibleSection({
   title,
   count,
@@ -87,7 +85,8 @@ function CollapsibleSection({
   count: number;
   children: ReactNode;
 }) {
-  const [collapsed, toggle] = useCollapsed(`${usePathname()}:${title}`);
+  const [collapsed, setCollapsed] = useState(true);
+  const toggle = () => setCollapsed((c) => !c);
   const bodyId = useId();
 
   return (
