@@ -11,6 +11,9 @@ import { entrySeconds, formatDuration, hours } from "@/lib/time";
 import { parsePeriod, periodLabel, periodStart, PERIODS } from "@/lib/report-period";
 import { card } from "@/components/ui/styles";
 import { BarChart, type BarDatum } from "@/components/reports/bar-chart";
+import { TrendChart } from "@/components/reports/trend-chart";
+import { buildTrend, STEP_LABEL } from "@/lib/report-trend";
+import { dayKey } from "@/lib/format";
 import { PageHeader } from "../_components/page-header";
 
 export const metadata: Metadata = { title: "Raporlar · Em3Task" };
@@ -42,20 +45,29 @@ async function Reports({ searchParams }: Pick<PageProps<"/raporlar">, "searchPar
     .from("time_entries")
     .select("user_id, started_at, ended_at, task:tasks!time_entries_task_id_fkey(project:projects!tasks_project_id_fkey(name))")
     .not("ended_at", "is", null);
+  // Trend grafiği için dönemde açılan görevler
+  let createdQ = supabase.from("tasks").select("created_at");
   if (from) {
     completedQ = completedQ.gte("completed_at", from);
+    createdQ = createdQ.gte("created_at", from);
     timeQ = timeQ.gte("started_at", from);
   }
-  const [completedRes, openRes, timeRes] = await Promise.all([
+  const [completedRes, openRes, timeRes, createdRes] = await Promise.all([
     completedQ,
     supabase.from("tasks").select("assigned_to, due_date").neq("status", "done"),
     timeQ,
+    createdQ,
   ]);
 
-  const failed = completedRes.error || openRes.error || timeRes.error;
+  const failed = completedRes.error || openRes.error || timeRes.error || createdRes.error;
   const completed = completedRes.data ?? [];
   const open = openRes.data ?? [];
   const entries = timeRes.data ?? [];
+  const createdAt = (createdRes.data ?? []).map((t) => t.created_at);
+
+  // Açılan ve tamamlanan görevler zaman içinde. "Tüm zamanlar"da ilk görevin günü başlangıç
+  const startDay = from ? from.slice(0, 10) : createdAt.map(dayKey).reduce((a, b) => (b < a ? b : a), today);
+  const trend = buildTrend(startDay, today, createdAt, completed.map((t) => t.completed_at!));
 
   const nameOf = (id: string | null) =>
     id === null ? "Herkes" : (team.find((m) => m.id === id)?.name ?? "Eski üye");
@@ -141,6 +153,10 @@ async function Reports({ searchParams }: Pick<PageProps<"/raporlar">, "searchPar
         <Stat icon={<CalendarX2 className="size-[18px]" />} tone="bg-rose-50 text-rose-700" label="Geciken açık görev" value={String(overdueTotal)} note="şu an" />
         <Stat icon={<Timer className="size-[18px]" />} tone="bg-sky-50 text-sky-700" label="Ort. tamamlanma süresi" value={avgLead === null ? "—" : `${nf.format(avgLead)} gün`} note="oluşturma → tamamlanma" />
       </div>
+
+      <Panel title="Açılan ve tamamlanan görevler" subtitle={`${periodLabel(period)} · ${STEP_LABEL[trend.step]}`}>
+        <TrendChart buckets={trend.buckets} empty="Bu dönemde açılan ya da tamamlanan görev yok." />
+      </Panel>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Panel title="Kişi başına tamamlanan görev" subtitle={periodLabel(period)}>
