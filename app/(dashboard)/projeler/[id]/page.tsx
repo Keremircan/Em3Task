@@ -70,7 +70,11 @@ async function Board({ params }: Pick<PageProps<"/projeler/[id]">, "params">) {
       </header>
 
       {/* Süzgeçler ve yana kaydırılan sütunlar TaskBoard içinde */}
-      <TaskBoard tasks={all} userId={userId} />
+      <TaskBoard
+        tasks={all}
+        userId={userId}
+        newTask={{ options: formOptions, projectId: project.id }}
+      />
     </>
   );
 }

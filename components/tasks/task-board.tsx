@@ -15,7 +15,8 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ArrowRight, CalendarClock, GripVertical, RotateCcw } from "lucide-react";
+import { ArrowRight, CalendarClock, GripVertical, Plus, RotateCcw } from "lucide-react";
+import { TaskFormDialog, type TaskFormOptions } from "./task-form-dialog";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { acceptTask, completeTask, requestRevision, submitForReview } from "@/actions/tasks";
 import { formatDateTime } from "@/lib/format";
@@ -64,21 +65,40 @@ const MOVE_HINT: Record<BoardMove, string> = {
 // Proje panosu: 4 sütun, kartlar sütunlar arasında sürüklenebilir (fare, dokunma, klavye).
 // Sürükleme sadece iş akışının izin verdiği geçişlerde kabul edilir; kart hemen yeni
 // sütuna geçer, kaydedilemezse geri döner. Üstte kişi / öncelik / etiket süzgeçleri var.
-export function TaskBoard({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
+type NewTask = { options: TaskFormOptions; projectId: string };
+
+// Boş sütunda iş akışını anlatan kısa not ("Yeni" sütununda bunun yerine "Görev ekle" var)
+const EMPTY_HINT: Record<TaskStatus, string> = {
+  pending: "Yeni görev yok",
+  in_progress: "Kabul edilen işler burada görünür",
+  review: "Kontrole gönderilen işler burada görünür",
+  done: "Tamamlanan işler burada görünür",
+};
+
+export function TaskBoard({
+  tasks,
+  userId,
+  newTask,
+}: {
+  tasks: BoardTask[];
+  userId: string;
+  newTask?: NewTask; // verilirse "Yeni" sütununda "Görev ekle" çıkar
+}) {
   return (
     <OptimisticTasksProvider tasks={tasks}>
-      <Board tasks={tasks} userId={userId} />
+      <Board tasks={tasks} userId={userId} newTask={newTask} />
     </OptimisticTasksProvider>
   );
 }
 
-function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
+function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string; newTask?: NewTask }) {
   const all = useShownTasks(tasks);
   const optimistic = useOptimisticTasks();
   const [, startTransition] = useTransition();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [revisionFor, setRevisionFor] = useState<BoardTask | null>(null);
+  const [adding, setAdding] = useState(false);
   const justDragged = useRef(false);
   // Sabit kimlik: sunucu ve tarayıcı aynı aria-describedby'ı üretsin (hydration uyarısı olmasın)
   const dndId = useId();
@@ -189,10 +209,32 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
                       onRevision={() => setRevisionFor(task)}
                     />
                   ))}
-                  {items.length === 0 && (
-                    <li className="rounded-lg border border-dashed border-slate-300/70 px-3 py-5 text-center text-sm text-slate-400">
-                      {move ? "Buraya bırakın" : "Görev yok"}
+                  {move && items.length === 0 ? (
+                    <li className="rounded-lg border border-dashed border-teal-300 px-3 py-5 text-center text-sm text-teal-700">
+                      Buraya bırakın
                     </li>
+                  ) : column.status === "pending" && newTask && !active ? (
+                    // "Yeni" sütununun altında her zaman: bu projeye hızlı görev ekleme
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setAdding(true)}
+                        className={`flex w-full items-center justify-center gap-1.5 rounded-lg text-sm font-semibold text-slate-500 transition hover:bg-white/70 hover:text-teal-700 ${
+                          items.length ? "py-2" : "border border-dashed border-slate-300/70 py-5"
+                        }`}
+                      >
+                        <Plus className="size-4" strokeWidth={2.2} />
+                        Görev ekle
+                      </button>
+                    </li>
+                  ) : (
+                    items.length === 0 && (
+                      <li className="px-3 py-4 text-center text-[13px] leading-snug text-slate-400">
+                        {all.some((t) => t.status === column.status)
+                          ? "Süzgece uyan görev yok"
+                          : EMPTY_HINT[column.status]}
+                      </li>
+                    )
                   )}
                 </Column>
               );
@@ -207,6 +249,15 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
           </DragOverlay>
         </DndContext>
       </div>
+
+      {adding && newTask && (
+        <TaskFormDialog
+          open={adding}
+          onClose={() => setAdding(false)}
+          options={newTask.options}
+          defaultProjectId={newTask.projectId}
+        />
+      )}
 
       <RevisionDialog
         open={revisionFor !== null}

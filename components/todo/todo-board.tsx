@@ -1,8 +1,9 @@
 "use client";
 
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useId, useOptimistic, useRef, useState, useTransition } from "react";
 import {
   Check,
+  ChevronDown,
   CircleAlert,
   Ellipsis,
   FolderKanban,
@@ -26,6 +27,7 @@ import { card, field, primaryButton } from "@/components/ui/styles";
 import { SelectField } from "@/components/ui/select-field";
 import { Menu } from "@/components/ui/menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useCollapsed } from "@/components/ui/use-collapsed";
 import { safe } from "@/lib/safe-action";
 
 type Todo = Pick<PersonalTodo, "id" | "title" | "category" | "is_completed" | "created_at">;
@@ -282,33 +284,65 @@ function TodoGroup({
   // Bitmemişler üstte, tamamlananlar altta
   const sorted = [...items.filter((t) => !t.is_completed), ...items.filter((t) => t.is_completed)];
   const label = category ?? NONE_LABEL;
+  // Başlığa tıklayınca maddeler gizlenir; bu tarayıcıda hatırlanır
+  const [collapsed, toggle] = useCollapsed(`todo:${category ?? NONE}`);
+  const bodyId = useId();
+
+  const icon = isProject ? (
+    <FolderKanban className="size-4 shrink-0 text-teal-600" />
+  ) : (
+    <ListTodo className="size-4 shrink-0 text-slate-400" />
+  );
+  const counter = (
+    <span className="shrink-0 text-xs font-medium text-slate-400">
+      {doneCount}/{items.length}
+    </span>
+  );
 
   return (
     <section className={`${card} overflow-hidden`}>
-      <header className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2.5">
-        {isProject ? (
-          <FolderKanban className="size-4 shrink-0 text-teal-600" />
-        ) : (
-          <ListTodo className="size-4 shrink-0 text-slate-400" />
-        )}
+      <header
+        className={`flex items-center gap-2 px-3.5 py-2.5 ${collapsed ? "" : "border-b border-slate-100"}`}
+      >
         {renaming ? (
-          <RenameInput
-            initial={category ?? ""}
-            onCancel={() => setRenaming(false)}
-            onSave={(to) => {
-              setRenaming(false);
-              if (to === category) return;
-              run({ type: "renameGroup", from: category, to }, () =>
-                renamePersonalCategory(category, to),
-              );
-            }}
-          />
+          <>
+            {icon}
+            <RenameInput
+              initial={category ?? ""}
+              onCancel={() => setRenaming(false)}
+              onSave={(to) => {
+                setRenaming(false);
+                if (to === category) return;
+                run({ type: "renameGroup", from: category, to }, () =>
+                  renamePersonalCategory(category, to),
+                );
+              }}
+            />
+            {counter}
+          </>
         ) : (
-          <h2 className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{label}</h2>
+          <h2 className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={!collapsed}
+              aria-controls={bodyId}
+              className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none"
+            >
+              {icon}
+              <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">
+                {label}
+              </span>
+              {counter}
+              <ChevronDown
+                aria-hidden
+                className={`size-4 shrink-0 text-slate-400 transition group-hover:text-teal-700 ${
+                  collapsed ? "-rotate-90" : ""
+                }`}
+              />
+            </button>
+          </h2>
         )}
-        <span className="shrink-0 text-xs font-medium text-slate-400">
-          {doneCount}/{items.length}
-        </span>
         <a
           href={whatsappShareUrl(label, sorted)}
           target="_blank"
@@ -339,34 +373,36 @@ function TodoGroup({
         />
       </header>
 
-      <ul className="divide-y divide-slate-100">
-        {sorted.map((todo) => (
-          <TodoItem key={todo.id} todo={todo} run={run} />
-        ))}
-      </ul>
+      <div id={bodyId} hidden={collapsed}>
+        <ul className="divide-y divide-slate-100">
+          {sorted.map((todo) => (
+            <TodoItem key={todo.id} todo={todo} run={run} />
+          ))}
+        </ul>
 
-      {/* Bu başlığa hızlı madde ekleme */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const title = cleanTitle(draft);
-          if (!title) return;
-          onAdd(title);
-          setDraft("");
-        }}
-        className="flex items-center gap-2 border-t border-slate-100 px-3.5 py-1.5"
-      >
-        <Plus className="size-4 shrink-0 text-slate-300" />
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          maxLength={MAX_TODO_TITLE}
-          placeholder="Madde ekle…"
-          aria-label={`${label} başlığına madde ekle`}
-          autoComplete="off"
-          className="h-8 min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-        />
-      </form>
+        {/* Bu başlığa hızlı madde ekleme */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const title = cleanTitle(draft);
+            if (!title) return;
+            onAdd(title);
+            setDraft("");
+          }}
+          className="flex items-center gap-2 border-t border-slate-100 px-3.5 py-1.5"
+        >
+          <Plus className="size-4 shrink-0 text-slate-300" />
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={MAX_TODO_TITLE}
+            placeholder="Madde ekle…"
+            aria-label={`${label} başlığına madde ekle`}
+            autoComplete="off"
+            className="h-8 min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+          />
+        </form>
+      </div>
 
       <ConfirmDialog
         open={deleting}

@@ -1,7 +1,9 @@
 "use client";
 
+import { useId, type ReactNode } from "react";
 import Link from "next/link";
-import { CalendarClock, FolderKanban, MessageSquare, UserRound } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { CalendarClock, ChevronDown, FolderKanban, MessageSquare, UserRound } from "lucide-react";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { formatDateTime } from "@/lib/format";
 import { previewText } from "@/lib/tasks";
@@ -15,6 +17,7 @@ import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
 import { useShownTasks } from "./optimistic-tasks";
 import { card } from "@/components/ui/styles";
+import { useCollapsed } from "@/components/ui/use-collapsed";
 
 export type TaskListItem = {
   id: string;
@@ -54,13 +57,62 @@ export function TaskSection({
   empty: string;
 }) {
   const shown = useShownTasks(tasks).filter((t) => statuses.includes(t.status));
-  return (
-    <section className={`${card} p-4 sm:p-5`}>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
+
+  // Boş bölüm tek satır: başlık ve kısa not (büyük boş kutu yerine)
+  if (!shown.length) {
+    return (
+      <section
+        className={`${card} flex flex-col gap-0.5 px-4 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-5`}
+      >
         <h2 className="text-base font-bold text-slate-900">{title}</h2>
-        <span className="text-sm text-slate-500">{shown.length} iş</span>
-      </div>
+        <p className="text-sm text-slate-400">{listProps.empty}</p>
+      </section>
+    );
+  }
+
+  return (
+    <CollapsibleSection title={title} count={shown.length}>
       <TaskList tasks={shown} {...listProps} />
+    </CollapsibleSection>
+  );
+}
+
+// Başlığa tıklayınca açılıp kapanan kart; durum sayfa + başlık adıyla saklanır
+function CollapsibleSection({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: ReactNode;
+}) {
+  const [collapsed, toggle] = useCollapsed(`${usePathname()}:${title}`);
+  const bodyId = useId();
+
+  return (
+    <section className={card}>
+      <h2>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none sm:px-5"
+        >
+          <span className="flex-1 text-base font-bold text-slate-900">{title}</span>
+          <span className="text-sm text-slate-500">{count} iş</span>
+          <ChevronDown
+            aria-hidden
+            className={`size-4.5 shrink-0 text-slate-400 transition group-hover:text-teal-700 ${
+              collapsed ? "-rotate-90" : ""
+            }`}
+          />
+        </button>
+      </h2>
+      <div id={bodyId} hidden={collapsed} className="px-4 pt-1 pb-4 sm:px-5 sm:pb-5">
+        {children}
+      </div>
     </section>
   );
 }
