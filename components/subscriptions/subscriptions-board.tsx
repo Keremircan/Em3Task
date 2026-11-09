@@ -21,12 +21,13 @@ import { deleteSubscription } from "@/actions/subscriptions";
 import {
   CATEGORIES,
   contractNotice,
+  DUE_CAPTION,
+  DUE_TONE_CLASS,
   formatMoney,
   formatTotals,
   isPaymentWithin,
   nextDue,
   sumByCurrency,
-  type DueKind,
   type NextDue,
 } from "@/lib/subscriptions";
 import { formatDay } from "@/lib/format";
@@ -50,21 +51,7 @@ const SHORT_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.short])
   string
 >;
 
-// Kalan gün sayacının renkleri: bugün/geçti kırmızı, 3 günden az sarı
-const TONE: Record<NextDue["tone"], string> = {
-  danger: "bg-rose-50 text-rose-700",
-  warning: "bg-amber-50 text-amber-800",
-  near: "bg-teal-50 text-teal-800",
-  later: "bg-slate-50 text-slate-600",
-  muted: "bg-slate-50 text-slate-500",
-};
-
-const DUE_CAPTION: Record<DueKind, string> = {
-  renewal: "Yenilenme",
-  payment: "Son ödeme",
-  ends: "Bitiş",
-  expired: "Bitiş tarihi",
-};
+const TONE = DUE_TONE_CLASS;
 
 type Filter = "all" | SubscriptionCategory | "cancel";
 

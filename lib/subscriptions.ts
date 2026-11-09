@@ -192,6 +192,37 @@ export function isPaymentWithin(due: NextDue | null, n: number): boolean {
   return !!due && (due.kind === "renewal" || due.kind === "payment") && due.days >= 0 && due.days <= n;
 }
 
+// Kalan gün sayacının renkleri: bugün/geçti kırmızı, 3 günden az sarı
+export const DUE_TONE_CLASS: Record<DueTone, string> = {
+  danger: "bg-rose-50 text-rose-700",
+  warning: "bg-amber-50 text-amber-800",
+  near: "bg-teal-50 text-teal-800",
+  later: "bg-slate-50 text-slate-600",
+  muted: "bg-slate-50 text-slate-500",
+};
+
+export const DUE_CAPTION: Record<DueKind, string> = {
+  renewal: "Yenilenme",
+  payment: "Son ödeme",
+  ends: "Bitiş",
+  expired: "Bitiş tarihi",
+};
+
+// Ana sayfa için: n gün içinde yenilenen, ödenecek ya da bitecek kayıtlar (en yakını önce).
+// Süresi geçmiş sunucu/domain kayıtları da dahil: gözden kaçmamalı.
+export function upcomingSubscriptions(
+  subscriptions: Subscription[],
+  today: string,
+  n: number,
+): { subscription: Subscription; due: NextDue }[] {
+  return subscriptions
+    .map((subscription) => ({ subscription, due: nextDue(subscription, today) }))
+    .filter((i): i is { subscription: Subscription; due: NextDue } =>
+      Boolean(i.due && (i.due.kind === "expired" || i.due.days <= n)),
+    )
+    .sort((a, b) => a.due.days - b.due.days || a.subscription.name.localeCompare(b.subscription.name, "tr"));
+}
+
 // Taahhüt bitişi yaklaşıyorsa (60 gün) ya da geçtiyse uyarı metni
 export function contractNotice(s: Subscription, today: string): string | null {
   if (s.category !== "telecom" || !s.has_commitment || !s.contract_end) return null;

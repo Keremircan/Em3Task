@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useId, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -80,6 +80,8 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [revisionFor, setRevisionFor] = useState<BoardTask | null>(null);
   const justDragged = useRef(false);
+  // Sabit kimlik: sunucu ve tarayıcı aynı aria-describedby'ı üretsin (hydration uyarısı olmasın)
+  const dndId = useId();
 
   const sensors = useSensors(
     // Fare: 6 px hareket edince sürükleme başlar (tıklama bağlantıyı açmaya devam eder)
@@ -150,6 +152,7 @@ function Board({ tasks, userId }: { tasks: BoardTask[]; userId: string }) {
       {/* Mobilde sütunlar yana kaydırılır (çubuk gizli); sütunlar sayfanın altına kadar uzanır */}
       <div className="no-scrollbar -mx-4 flex flex-1 flex-col overflow-x-auto px-4 sm:-mx-6 sm:px-6">
         <DndContext
+          id={dndId}
           sensors={sensors}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
