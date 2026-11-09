@@ -35,9 +35,18 @@ export function MobileTitleText({ label, title }: { label: string; title: string
   );
 }
 
+// Üstteki küçük etiket menüdeki grubu gösterir (sidebar ile aynı)
+const GROUP_LABEL: Record<string, string> = {
+  "/genel": "EKİP",
+  "/uyeler": "EKİP",
+  "/raporlar": "EKİP",
+  "/todo": "KİŞİSEL",
+  "/abonelikler": "KİŞİSEL",
+  "/profil": "HESAP",
+};
+
 function titleFor(pathname: string, projects: Project[]) {
-  if (pathname === "/todo" || pathname === "/abonelikler") return { label: "KİŞİSEL", title: TITLES[pathname] };
-  if (TITLES[pathname]) return { label: "PANO", title: TITLES[pathname] };
+  if (TITLES[pathname]) return { label: GROUP_LABEL[pathname] ?? "PANO", title: TITLES[pathname] };
   const project = pathname.match(/^\/projeler\/([^/]+)/);
   if (project) {
     return { label: "PROJE", title: projects.find((p) => p.id === project[1])?.name ?? "Proje" };

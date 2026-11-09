@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Raporlar · Em3Task" };
 export default function ReportsPage({ searchParams }: PageProps<"/raporlar">) {
   return (
     <>
-      <PageHeader title="Raporlar" description="Tamamlanan işler, harcanan süre ve gecikmeler." />
+      <PageHeader title="Raporlar" label="EKİP" description="Tamamlanan işler, harcanan süre ve gecikmeler." />
       <Suspense fallback={<div className={`${card} h-96 animate-pulse`} />}>
         <Reports searchParams={searchParams} />
       </Suspense>

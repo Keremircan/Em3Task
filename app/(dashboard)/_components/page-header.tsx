@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
-// Mobilde başlık ve alt yazılar üst çubukta gösterilir; burada sadece buton (varsa) kalır
+// Mobilde başlık ve alt yazılar üst çubukta gösterilir; burada sadece buton (varsa) kalır.
+// label: menüdeki grubun adı (EKİP, KİŞİSEL, HESAP); ana gruptaki sayfalarda yok.
 export function PageHeader({
   title,
-  label = "PANO",
+  label,
   description,
   action,
 }: {
@@ -19,8 +20,8 @@ export function PageHeader({
       }`}
     >
       <div className="hidden min-w-0 lg:block">
-        <p className="text-xs font-medium tracking-[0.12em] text-slate-500">{label}</p>
-        <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-slate-900">
+        {label && <p className="mb-1 text-xs font-medium tracking-[0.12em] text-slate-500">{label}</p>}
+        <h1 className="text-2xl leading-tight font-bold tracking-tight text-slate-900">
           {title}
         </h1>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}

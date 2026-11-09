@@ -14,6 +14,7 @@ import { SidebarFooter, SidebarFooterSkeleton } from "./_components/sidebar-foot
 import { PresencePing } from "@/components/realtime/presence-ping";
 import { SidebarSearch } from "./_components/sidebar-search";
 import { getNotifications } from "@/lib/notifications";
+import { getNavCounts } from "@/lib/nav-counts";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
@@ -72,7 +73,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
       <PresencePing />
 
       <Suspense fallback={<MobileTabBarList pathname={null} />}>
-        <MobileTabBar />
+        <TabBar />
       </Suspense>
     </div>
   );
@@ -115,12 +116,22 @@ async function SidebarUser() {
 }
 
 async function SidebarData() {
-  const [user, projects] = await Promise.all([getCurrentUser(), getProjects()]);
-  const props = { projects, userId: user.id };
+  const [user, projects, counts] = await Promise.all([getCurrentUser(), getProjects(), getNavCounts()]);
+  const props = { projects, userId: user.id, counts };
   return (
     // Aktif sayfa (usePathname) istek anında bilinir; o gelene kadar vurgusuz liste
     <Suspense fallback={<SidebarNavList {...props} pathname={null} />}>
       <SidebarNav {...props} />
+    </Suspense>
+  );
+}
+
+// Alt sekme çubuğu; Görevlerim ve Atadığım sekmelerinde bekleyen iş rozetleri
+async function TabBar() {
+  const counts = await getNavCounts();
+  return (
+    <Suspense fallback={<MobileTabBarList pathname={null} counts={counts} />}>
+      <MobileTabBar counts={counts} />
     </Suspense>
   );
 }
@@ -134,13 +145,18 @@ async function MobileTitle() {
   );
 }
 
+// Menü gruplarıyla aynı düzen: 4 + 3 + 2 satır, aralarda grup başlığı
 function SidebarSkeleton() {
   return (
-    <div className="flex-1 animate-pulse space-y-1.5 px-3">
-      {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="h-9 rounded-lg bg-white/[0.04]" />
+    <div className="flex-1 animate-pulse space-y-5 px-3">
+      {[4, 3, 2].map((rows, g) => (
+        <div key={g} className="space-y-0.5">
+          {g > 0 && <div className="mb-2 h-3 w-14 rounded bg-white/[0.04]" />}
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className="h-9 rounded-lg bg-white/[0.04]" />
+          ))}
+        </div>
       ))}
-      <div className="mt-5 h-5 w-20 rounded bg-white/[0.04]" />
     </div>
   );
 }

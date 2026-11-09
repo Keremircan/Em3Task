@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Üyeler · Em3Task" };
 export default function MembersPage() {
   return (
     <>
-      <PageHeader title="Üyeler" description="Ekip üyeleri ve rolleri." />
+      <PageHeader title="Üyeler" label="EKİP" description="Ekip üyeleri ve rolleri." />
       <Suspense fallback={<MembersSkeleton />}>
         <Members />
       </Suspense>

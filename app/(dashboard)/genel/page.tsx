@@ -43,6 +43,7 @@ export default function GeneralPage({ searchParams }: PageProps<"/genel">) {
     <>
       <PageHeader
         title="Genel"
+        label="EKİP"
         description="Projeden bağımsız ekip sohbeti; paylaşılan linkler ve dokümanlar sağda toplanır."
       />
       <Suspense fallback={<GeneralSkeleton />}>
