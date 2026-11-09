@@ -15,11 +15,12 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ArrowRight, CalendarClock, GripVertical, Plus, RotateCcw } from "lucide-react";
+import { CalendarClock, ChevronRight, GripVertical, Plus, RotateCcw, Users } from "lucide-react";
 import { TaskFormDialog, type TaskFormOptions } from "./task-form-dialog";
+import { Avatar } from "@/components/ui/avatar";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { acceptTask, completeTask, requestRevision, submitForReview } from "@/actions/tasks";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import {
   BOARD_COLUMNS,
   boardMove,
@@ -51,8 +52,8 @@ export type BoardTask = {
   created_at: string;
   assigned_to: string | null;
   created_by: string | null;
-  creator: { full_name: string | null } | null;
-  assignee: { full_name: string | null } | null;
+  creator: { full_name: string | null; avatar_url?: string | null } | null;
+  assignee: { full_name: string | null; avatar_url?: string | null } | null;
 };
 
 const MOVE_HINT: Record<BoardMove, string> = {
@@ -404,14 +405,15 @@ function DraggableCard({
               <LabelChips labels={taskLabels(task.labels)} />
             </span>
           ) : null}
-          <FromTo
-            from={task.creator?.full_name ?? "Eski üye"}
-            to={task.assigned_to === null ? "Herkes" : (task.assignee?.full_name ?? "Eski üye")}
-          />
-          <p className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-slate-500">
-            <CalendarClock className="size-3.5" />
-            {formatDateTime(task.created_at)}
-          </p>
+          <span className="mt-2 flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-1.5 text-[11.5px] text-slate-500">
+              <CalendarClock className="size-3.5 shrink-0" />
+              <span className="truncate" title={formatDateTime(task.created_at)}>
+                {formatDate(task.created_at)}
+              </span>
+            </span>
+            <People task={task} />
+          </span>
         </Link>
       </div>
       {canRequestRevision(task, userId) && (
@@ -429,17 +431,34 @@ function DraggableCard({
   );
 }
 
-// Dar kartlarda sadece ilk ad; tam ad üzerine gelince görünür
-function FromTo({ from, to }: { from: string; to: string }) {
-  const first = (name: string) => name.split(/\s+/)[0] || name;
+// Atayan ve sorumlu avatarları: aynı kişiyse tek avatar, farklıysa "atayan › sorumlu".
+// "Herkes"e atanan iş için grup simgesi. Tam adlar üzerine gelince görünür.
+function People({ task }: { task: BoardTask }) {
+  const from = task.creator?.full_name ?? "Eski üye";
+  const open = task.assigned_to === null;
+  const to = open ? "Herkes" : (task.assignee?.full_name ?? "Eski üye");
+  const self = !open && task.created_by === task.assigned_to;
+  const names = self ? `${to} (kendine atadı)` : `Atayan: ${from} · Sorumlu: ${to}`;
+
   return (
-    <p
-      title={`${from} → ${to}`}
-      className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-slate-600"
-    >
-      <span className="truncate">{first(from)}</span>
-      <ArrowRight className="size-3.5 shrink-0 text-slate-400" />
-      <span className="truncate">{first(to)}</span>
-    </p>
+    <span title={names} className="flex shrink-0 items-center gap-0.5">
+      <span className="sr-only">{names}</span>
+      {!self && (
+        <>
+          <Avatar name={from} src={task.creator?.avatar_url} size="xs" />
+          <ChevronRight aria-hidden className="size-3 text-slate-300" />
+        </>
+      )}
+      {open ? (
+        <span
+          aria-hidden
+          className="flex size-5 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400"
+        >
+          <Users className="size-3" />
+        </span>
+      ) : (
+        <Avatar name={to} src={task.assignee?.avatar_url} size="xs" />
+      )}
+    </span>
   );
 }

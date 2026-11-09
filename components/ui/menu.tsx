@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Check } from "lucide-react";
 
 export type MenuItem = {
   label: string;
   icon?: ReactNode;
   onSelect: () => void;
   danger?: boolean;
+  // Verilirse onay kutulu seçenek olur: tıklayınca menü açık kalır (çoklu seçim)
+  checked?: boolean;
 };
 
 // Küçük açılır menü: dışarı tıklayınca veya Esc ile kapanır
@@ -103,25 +106,39 @@ export function Menu({
           className={`fixed z-[60] min-w-48 overflow-hidden rounded-xl border p-1 shadow-xl ${panel}`}
         >
           {header}
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpen(false);
-                item.onSelect();
-              }}
-              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${itemHover} ${
-                item.danger ? "text-rose-500" : ""
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
+          {items.map((item) => {
+            const checkable = item.checked !== undefined;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                role={checkable ? "menuitemcheckbox" : "menuitem"}
+                aria-checked={checkable ? item.checked : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!checkable) setOpen(false);
+                  item.onSelect();
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${itemHover} ${
+                  item.danger ? "text-rose-500" : ""
+                }`}
+              >
+                {checkable && (
+                  <span
+                    aria-hidden
+                    className={`flex size-4 shrink-0 items-center justify-center rounded border ${
+                      item.checked ? "border-teal-600 bg-teal-600 text-white" : "border-slate-300"
+                    }`}
+                  >
+                    {item.checked && <Check className="size-3" strokeWidth={3.2} />}
+                  </span>
+                )}
+                {item.icon}
+                {item.label}
+              </button>
+            );
+          })}
         </div>,
           document.body,
         )}

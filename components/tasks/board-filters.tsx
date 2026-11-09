@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { CalendarX2, Search, X } from "lucide-react";
+import { CalendarX2, ChevronDown, Search, X } from "lucide-react";
+import { Menu } from "@/components/ui/menu";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { PRIORITY_LABELS, TASK_PRIORITIES } from "@/lib/tasks";
 import { daysBetween } from "@/lib/due";
@@ -73,99 +74,122 @@ export function BoardFilters({
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
   const chip = (on: boolean) =>
-    `inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition ${
+    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold whitespace-nowrap transition ${
       on ? "border-teal-300 bg-teal-50 text-teal-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
     }`;
 
   if (!tasks.length) return null;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2" role="search" aria-label="Görevleri süz">
-      <label className="relative">
+    // Masaüstünde tek satır; mobilde arama üstte, süzgeçler altta yana kaydırılır
+    <div
+      className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center"
+      role="search"
+      aria-label="Görevleri süz"
+    >
+      <label className="relative shrink-0">
         <span className="sr-only">Görev ara</span>
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-slate-400" />
         <input
           value={filters.text}
           onChange={(e) => set({ text: e.target.value })}
           placeholder="Bu panoda ara…"
-          className="h-8 w-44 rounded-lg border border-slate-200 bg-white pr-2.5 pl-8 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
+          className="h-8 w-full rounded-lg border border-slate-200 bg-white pr-2.5 pl-8 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15 sm:w-36"
         />
       </label>
 
-      <select
-        value={filters.person}
-        onChange={(e) => set({ person: e.target.value })}
-        aria-label="Sorumlu kişi"
-        className={`${chip(Boolean(filters.person))} pr-2 outline-none`}
-      >
-        <option value="">Tüm kişiler</option>
-        {hasOpen && <option value="herkes">Herkes (sorumlu yok)</option>}
-        {people.map(([id, name]) => (
-          <option key={id} value={id}>
-            {name}
-          </option>
-        ))}
-      </select>
+      <div className="no-scrollbar -mx-4 -my-1 flex items-center gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:my-0 sm:flex-wrap sm:overflow-visible sm:p-0">
+        <select
+          value={filters.person}
+          onChange={(e) => set({ person: e.target.value })}
+          aria-label="Sorumlu kişi"
+          className={`${chip(Boolean(filters.person))} max-w-36 pr-2 outline-none`}
+        >
+          <option value="">Tüm kişiler</option>
+          {hasOpen && <option value="herkes">Herkes (sorumlu yok)</option>}
+          {people.map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
 
-      <div className="flex items-center gap-1" role="group" aria-label="Öncelik">
-        {TASK_PRIORITIES.filter((p) => p !== "none").map((p) => (
-          <button
-            key={p}
-            type="button"
-            aria-pressed={filters.priorities.includes(p)}
-            title={`Öncelik: ${PRIORITY_LABELS[p]}`}
-            onClick={() => set({ priorities: toggle(filters.priorities, p) })}
-            className={chip(filters.priorities.includes(p))}
-          >
-            <PriorityIcon priority={p} className="size-3.5" />
-            <span className="hidden sm:inline">{PRIORITY_LABELS[p]}</span>
-          </button>
-        ))}
-      </div>
+        {/* Öncelik ve etiket: açılır listede çoklu seçim (çubuk tek satırda kalsın) */}
+        <Menu
+          align="left"
+          label={selectedLabel("Öncelik", filters.priorities.length)}
+          triggerClassName={chip(filters.priorities.length > 0)}
+          trigger={<DropdownText text="Öncelik" count={filters.priorities.length} />}
+          items={TASK_PRIORITIES.filter((p) => p !== "none").map((p) => ({
+            label: PRIORITY_LABELS[p],
+            icon: <PriorityIcon priority={p} className="size-3.5" />,
+            checked: filters.priorities.includes(p),
+            onSelect: () => set({ priorities: toggle(filters.priorities, p) }),
+          }))}
+        />
 
-      {labels.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Etiket">
-          {labels.map((l) => {
-            const on = filters.labels.includes(l.id);
-            return (
-              <button
-                key={l.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => set({ labels: toggle(filters.labels, l.id) })}
-                className={chip(on)}
-              >
-                <span className={`size-2 rounded-full ${labelColor(l.color).dot}`} />
-                {l.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        {labels.length > 0 && (
+          <Menu
+            align="left"
+            label={selectedLabel("Etiket", filters.labels.length)}
+            triggerClassName={chip(filters.labels.length > 0)}
+            trigger={<DropdownText text="Etiket" count={filters.labels.length} />}
+            items={labels.map((l) => ({
+              label: l.name,
+              icon: <span className={`size-2 shrink-0 rounded-full ${labelColor(l.color).dot}`} />,
+              checked: filters.labels.includes(l.id),
+              onSelect: () => set({ labels: toggle(filters.labels, l.id) }),
+            }))}
+          />
+        )}
 
-      <button
-        type="button"
-        aria-pressed={filters.overdue}
-        onClick={() => set({ overdue: !filters.overdue })}
-        className={`${chip(filters.overdue)} ${filters.overdue ? "!border-rose-300 !bg-rose-50 !text-rose-700" : ""}`}
-      >
-        <CalendarX2 className="size-3.5" /> Gecikenler
-      </button>
+        <button
+          type="button"
+          aria-pressed={filters.overdue}
+          onClick={() => set({ overdue: !filters.overdue })}
+          className={`${chip(filters.overdue)} ${filters.overdue ? "!border-rose-300 !bg-rose-50 !text-rose-700" : ""}`}
+        >
+          <CalendarX2 className="size-3.5" /> Gecikenler
+        </button>
 
-      {!isEmpty(filters) && (
-        <>
-          <span className="text-xs text-slate-500">
-            {shownCount} / {tasks.length} görev
+        {!isEmpty(filters) && (
+          <span className="flex shrink-0 items-center gap-1">
+            <span
+              title={`${tasks.length} görevden ${shownCount} tanesi gösteriliyor`}
+              className="pl-1 text-xs font-medium whitespace-nowrap text-slate-500 tabular-nums"
+            >
+              {shownCount}/{tasks.length}
+              <span className="sr-only"> görev gösteriliyor</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => onChange(EMPTY_FILTERS)}
+              className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            >
+              <X className="size-3.5" /> Temizle
+            </button>
           </span>
-          <button
-            type="button"
-            onClick={() => onChange(EMPTY_FILTERS)}
-            className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-          >
-            <X className="size-3.5" /> Temizle
-          </button>
-        </>
-      )}
+        )}
+      </div>
     </div>
+  );
+}
+
+function selectedLabel(text: string, count: number) {
+  return count ? `${text}, ${count} seçili` : text;
+}
+
+// Açılır süzgeç düğmesinin yazısı: seçim varsa sayısı, yanında aşağı ok
+function DropdownText({ text, count }: { text: string; count: number }) {
+  return (
+    <>
+      {text}
+      {count > 0 && (
+        <span className="rounded bg-teal-600 px-1.5 text-[10.5px] leading-4 font-bold text-white">
+          {count}
+        </span>
+      )}
+      <ChevronDown aria-hidden className="size-3.5 opacity-60" />
+    </>
   );
 }

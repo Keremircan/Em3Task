@@ -10,6 +10,7 @@ const TONES = [
 ];
 
 const SIZES = {
+  xs: "size-5 text-[9px]",
   sm: "size-7 text-[11px]",
   md: "size-10 text-sm",
   lg: "size-24 text-2xl",
