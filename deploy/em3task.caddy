@@ -2,10 +2,12 @@
 # klasörü içe aktarır (import /etc/caddy/sites/*.caddy); değişiklikten sonra
 # Caddy'yi yeniden yüklemek yeterli.
 #
-# Japar'ın "(security)" snippet'i bilerek kullanılmadı: başlıkları (özellikle
-# Content-Security-Policy varsa) Japar'a göre ayarlı ve Em3Task'in Supabase
-# bağlantılarını kesebilir. Em3Task güvenlik başlıklarını kendisi gönderir.
+# Japar'ın "(security)" snippet'i kullanılmadı: bu dosya Japar'ın Caddyfile'ındaki
+# bir tanıma bağlı kalmasın (orada adı ya da içeriği değişirse Em3Task etkilenmesin).
+# Em3Task X-Frame-Options, X-Content-Type-Options ve Referrer-Policy başlıklarını
+# kendisi gönderir (next.config.ts); eksik kalan tek genel başlık HSTS aşağıda.
 task.japarakademi.io {
 	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy em3task-web:3000
 }
