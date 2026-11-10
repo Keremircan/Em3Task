@@ -1,0 +1,12 @@
+# İmaja girmemesi gerekenler. Gizli anahtar içeren dosyalar özellikle hariç.
+.env*
+supabase/yerel/
+.git
+.github
+.next
+.netlify
+node_modules
+deploy
+Dockerfile
+.dockerignore
+*.log

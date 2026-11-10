@@ -1,0 +1,66 @@
+# master'a her gönderimde Docker imajını derler ve ghcr.io'ya koyar.
+# Sunucuya kendiliğinden yayın YOK: sunucuda elle "docker compose pull && up -d"
+# (bkz. deploy/README.md). Netlify yayını bundan etkilenmez.
+#
+# Gerekli: GitHub → Settings → Secrets and variables → Actions → Variables
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY
+# (herkese açık değerler; gizli anahtarlar buraya girmez)
+
+name: Docker imajı
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-image
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derleme değerleri tanımlı mı?
+        env:
+          URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          VAPID: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ] || [ -z "$VAPID" ]; then
+            echo "::error::NEXT_PUBLIC_ değerleri GitHub Variables'ta tanımlı değil"
+            exit 1
+          fi
+
+      # ghcr.io adları küçük harf olmalı (Keremircan/Em3Task → keremircan/em3task)
+      - name: İmaj adı
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # latest: sunucunun çektiği; sha-…: sorun çıkarsa önceki sürüme dönmek için
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

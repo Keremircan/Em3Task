@@ -1,0 +1,11 @@
+# Sunucuda /opt/caddy-sites/em3task.caddy olarak durur. Japar'ın Caddyfile'ı bu
+# klasörü içe aktarır (import /etc/caddy/sites/*.caddy); değişiklikten sonra
+# Caddy'yi yeniden yüklemek yeterli.
+#
+# Japar'ın "(security)" snippet'i bilerek kullanılmadı: başlıkları (özellikle
+# Content-Security-Policy varsa) Japar'a göre ayarlı ve Em3Task'in Supabase
+# bağlantılarını kesebilir. Em3Task güvenlik başlıklarını kendisi gönderir.
+task.japarakademi.io {
+	encode zstd gzip
+	reverse_proxy em3task-web:3000
+}

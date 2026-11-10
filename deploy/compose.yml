@@ -1,0 +1,30 @@
+# Sunucuda /opt/em3task/compose.yml olarak durur (Japar Akademi'den ayrı klasör).
+#
+# Kurallar (Japar Akademi ile ortak sunucu):
+#   - Dışarıya hiçbir port açılmaz; 80/443 yalnızca Japar'ın Caddy'sinde.
+#   - Sadece "edge" ağına katılır (Japar compose'u bu ağı açar, yalnız caddy bağlıdır).
+#     Japar'ın default ağına (postgres, garage, app, worker) katılmaz.
+#   - Ağdaki adı benzersiz: em3task-web (Caddy: reverse_proxy em3task-web:3000).
+name: em3task
+
+services:
+  em3task-web:
+    image: ghcr.io/keremircan/em3task:latest
+    restart: unless-stopped
+    env_file: .env
+    # Japar'ın worker'ı (ffmpeg) yük altındayken onu sıkıştırmasın diye üst sınırlar
+    mem_limit: 768m
+    cpus: 1.0
+    networks:
+      edge:
+        aliases: [em3task-web]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  edge:
+    external: true
+    name: edge

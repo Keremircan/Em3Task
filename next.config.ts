@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Kendi sunucumuzdaki Docker imajı için tek klasörlük çıktı (Dockerfile açar).
+  // Netlify derlemesi bu değişkeni görmez, orada her şey eskisi gibi kalır.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   experimental: {
     agentFeedback: true,
     // Görev ekleri en fazla 10 MB; çok parçalı form ek yükü için pay bırakıldı
