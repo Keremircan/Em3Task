@@ -1,6 +1,6 @@
 # master'a her gönderimde Docker imajını derler ve ghcr.io'ya koyar.
 # Sunucuya kendiliğinden yayın YOK: sunucuda elle "docker compose pull && up -d"
-# (bkz. deploy/README.md). Netlify yayını bundan etkilenmez.
+# (bkz. deploy/README.md).
 #
 # Gerekli: GitHub → Settings → Secrets and variables → Actions → Variables
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY

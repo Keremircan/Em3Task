@@ -6,7 +6,7 @@
 --   2) Her sabah 09:00'da (Türkiye, UTC 06:00) Supabase, Em3Task'ın
 --      /api/cron/hatirlatma adresini gizli anahtarla çağırır.
 --
--- ÇALIŞTIRMADAN ÖNCE: aşağıdaki __CRON_SECRET__ yerine Netlify'daki
+-- ÇALIŞTIRMADAN ÖNCE: aşağıdaki __CRON_SECRET__ yerine sunucudaki (/opt/em3task/.env)
 -- CRON_SECRET değerini yazın (en az 32 karakter). Anahtar Supabase Vault'ta
 -- şifreli saklanır; bu dosyaya gerçek anahtarı yazıp git'e göndermeyin.
 -- Tekrar çalıştırılabilir.
@@ -72,7 +72,7 @@ select cron.schedule(
   '0 6 * * *',
   $$
   select net.http_post(
-    url := 'https://cfktask.netlify.app/api/cron/hatirlatma',
+    url := 'https://task.japarakademi.io/api/cron/hatirlatma',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'em3task_cron_secret')

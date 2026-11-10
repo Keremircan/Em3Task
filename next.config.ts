@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Kendi sunucumuzdaki Docker imajı için tek klasörlük çıktı (Dockerfile açar).
-  // Netlify derlemesi bu değişkeni görmez, orada her şey eskisi gibi kalır.
+  // Yerelde değişken tanımlı olmadığından "next build" / "next start" olağan çalışır.
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   experimental: {
     agentFeedback: true,

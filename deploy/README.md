@@ -1,4 +1,8 @@
-# Em3Task'i Hostinger VPS'e taşıma (Japar Akademi ile aynı sunucu)
+# Em3Task sunucu kurulumu (Hostinger VPS, Japar Akademi ile aynı sunucu)
+
+Em3Task 10 Kasım 2026'dan beri `https://task.japarakademi.io` adresinde, bu sunucuda
+çalışıyor; Netlify sitesi aynı gün silindi. Bu dosya kurulumun nasıl yapıldığını, nasıl
+güncellendiğini ve sıfırdan nasıl tekrarlanacağını anlatır.
 
 > **Bu dosyadaki sunucu komutlarını Japar Akademi ajanına göstermeden çalıştırmayın.**
 > Sunucuya Nginx, PM2 ya da başka bir panel KURULMAZ: 80/443 Japar'ın Caddy'sinde
@@ -42,7 +46,7 @@ docker network inspect edge --format '{{range .Containers}}{{.Name}} {{end}}'
   sol menü → Security başlığı → Secrets and variables → Actions → **Variables** sekmesi →
   New repository variable. Doğrudan adres:
   `https://github.com/Keremircan/Em3Task/settings/variables/actions`
-  Üç değer eklenir (Netlify'dakilerle aynı, herkese açık değerler):
+  Üç değer eklenir (herkese açık değerler; sunucudaki `.env`'dekilerle aynı):
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 - **Actions → Docker imajı → Run workflow** ile ilk imaj derlenir; yeşil tik beklenir.
 - İmaj gizli (private) kalabilir; o zaman sunucu bir kez giriş yapar (adım 3). Herkese açık
@@ -91,8 +95,8 @@ Bu klasördeki `compose.yml` → `/opt/em3task/compose.yml` olarak kopyalanır
 sudo nano /opt/em3task/.env
 ```
 
-İçeriği `env.example`'daki adlarla, değerleri Netlify → Site configuration →
-Environment variables'tan alarak doldurulur. Sonra yalnızca sahibinin okuyabileceği hale getirilir:
+İçeriği `env.example`'daki adlarla doldurulur (değerlerin nereden geleceği o dosyada yazıyor).
+Sonra yalnızca sahibinin okuyabileceği hale getirilir:
 
 ```bash
 sudo chmod 600 /opt/em3task/.env
@@ -135,7 +139,7 @@ $C exec -w /etc/caddy caddy caddy reload
 
 Caddy sertifikayı kendisi alır (ilk açılışta birkaç saniye sürebilir).
 
-## 5. Deneme (Netlify hâlâ yayında, ekip etkilenmez)
+## 5. Deneme
 
 `https://task.japarakademi.io` üzerinde:
 
@@ -145,16 +149,17 @@ Caddy sertifikayı kendisi alır (ilk açılışta birkaç saniye sürebilir).
 - [ ] Canlı güncelleme: iki sekmede aynı görev, birindeki değişiklik diğerine düşüyor
 - [ ] Japar Akademi sitesi hâlâ normal açılıyor
 
-Şifre sıfırlama ve bildirimler ancak adım 6'dan sonra yeni adreste çalışır.
+Şifre sıfırlama ve hatırlatma ancak adım 6'dan sonra bu adreste çalışır.
 
-## 6. Geçiş günü
+## 6. Adresi Supabase'e tanıtma
 
-Sırayla:
+Uygulamanın adresi değiştiğinde (ya da sıfırdan kurulumda) sırayla:
 
 1. **Supabase → Authentication → URL Configuration:**
    - Site URL: `https://task.japarakademi.io`
    - Redirect URLs'e ekle: `https://task.japarakademi.io/**`
-   (Netlify adresini geçiş bitene kadar listede bırakın.)
+   Listede eski bir adres varsa (ör. silinen Netlify adresi) çıkarılır: boşa çıkan bir
+   adresi başkası alabilir, oturum bağlantıları oraya yönlenmemeli.
 
 2. **Hatırlatma zamanlayıcısının adresi.** Supabase → SQL Editor'da çalıştırılır.
    Gizli anahtar Vault'ta zaten duruyor; sadece adres değişir:
@@ -180,25 +185,17 @@ Sırayla:
 
    Repodaki `supabase/hatirlatma.sql` dosyasındaki adres de aynı şekilde güncellenir.
 
-3. **Netlify'ı yeni adrese yönlendirme.** `netlify.toml` dosyasının sonuna eklenip gönderilir:
-
-   ```toml
-   [[redirects]]
-     from = "/*"
-     to = "https://task.japarakademi.io/:splat"
-     status = 301
-     force = true
-   ```
-
-4. **Eski bildirim abonelikleri.** Telefon bildirimleri adrese bağlıdır; eski adresteki
-   abonelikler yeni siteden çalışmaz. Supabase SQL Editor'da:
+3. **Eski bildirim abonelikleri.** Telefon bildirimleri adrese bağlıdır; eski adresteki
+   abonelikler yeni siteden yönetilemez ve tıklanınca eski adresi açar. Supabase SQL Editor'da:
 
    ```sql
-   delete from public.push_subscriptions;
+   -- Yeni adres 10 Kasım 2026'da açıldı; ondan önceki kayıtlar eski adrese ait
+   delete from public.push_subscriptions where created_at < '2026-11-10';
    ```
 
-5. **Ekibe duyuru:** yeni adres; ana ekrana eklenen uygulama silinip yeni adresten tekrar
-   eklenmeli; bildirimler profilden yeniden açılmalı.
+4. **Ekibe duyuru:** yeni adres; herkes bir kez yeniden giriş yapar (oturum adrese bağlı);
+   ana ekrana eklenen uygulama silinip yeni adresten tekrar eklenmeli; bildirimler
+   profilden yeniden açılmalı.
 
 Ertesi sabah (06:00 UTC = 09:00 TR) hatırlatmanın gittiğini kontrol:
 
@@ -207,6 +204,11 @@ select status, return_message, start_time
 from cron.job_run_details
 where jobid = (select jobid from cron.job where jobname = 'em3task-teslim-hatirlatma')
 order by start_time desc limit 3;
+
+-- İsteğin sunucudan aldığı yanıt (200 olmalı; 401 ise sunucudaki CRON_SECRET Vault'takiyle aynı değil)
+select status_code, left(content, 120) as yanit, created
+from net._http_response
+order by created desc limit 3;
 ```
 
 ## Güncelleme (her yeni sürümde)
@@ -232,9 +234,9 @@ cd /opt/em3task
 docker compose up -d
 ```
 
-**Netlify'a geri dönmek** (geçişten sonra): `netlify.toml`'daki yönlendirme silinip
-gönderilir, adım 6.1 ve 6.2 eski adresle tekrarlanır. Netlify sitesi bu süreçte hiç
-kapatılmadığı için anında döner.
+**Gizli anahtarların yedeği:** Netlify silindiği için gizli anahtarlar yalnızca iki yerde
+durur: sunucudaki `/opt/em3task/.env` ve geliştirme bilgisayarındaki `.env.local` (ikisi de
+git'e girmez). Bir kopyası şifre yöneticisinde tutulmalı; sunucu yeniden kurulursa oradan yazılır.
 
 **Em3Task'i sunucudan tamamen kaldırmak** (Japar'ı etkilemez):
 

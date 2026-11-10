@@ -4,7 +4,6 @@ supabase/yerel/
 .git
 .github
 .next
-.netlify
 node_modules
 deploy
 Dockerfile
