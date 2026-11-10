@@ -10,6 +10,7 @@
 //   - .theme-fixed: zaten koyu olan alanlar (sidebar, üst/alt çubuk, koyu menü, kod
 //     bloğu) her iki temada da orijinal renkleri kullanır
 //   - .theme-follow: sabit alan içinde açılıp temaya uyması gereken parçalar (zil paneli)
+//   - açık temada yazı için fazla açık kalan birkaç Tailwind tonu koyulaştırılır (LIGHT_A11Y)
 
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -32,7 +33,7 @@ const SLATE_DARK = {
   100: "oklch(27% 0 0)", // biraz daha açık
   200: "oklch(33% 0 0)", // kenarlıklar
   300: "oklch(43.9% 0 0)",
-  400: "oklch(55.6% 0 0)", // örnek metin, ikon
+  400: "oklch(64% 0 0)", // üçüncül yazı, ikon: kartta 5,5:1, hafif zeminde 4,5:1
   500: "oklch(70.8% 0 0)", // ikincil yazı
   600: "oklch(87% 0 0)",
   700: "oklch(92.2% 0 0)",
@@ -56,6 +57,16 @@ const TEAL_DARK = {
   900: "oklch(95% 0.008 210)",
   950: "oklch(98% 0.004 210)",
 };
+// Erişilebilirlik (WCAG AA, yazı için 4,5:1): Tailwind varsayılanlarında bu tonlar
+// beyaz kartta ve sayfa zemininde yazı için fazla açık (slate-400 2,6:1, beyaz yazıyla
+// teal-600 3,7:1). Açık temada (ve her iki temada koyu kalan alanlarda) biraz koyulaşır;
+// sınıf adları aynı kalır, gri kademeleri (400 < 500 < 600) korunur.
+const LIGHT_A11Y = {
+  "slate-400": "oklch(54% 0.046 257.417)", // üçüncül yazı, ikon, yer tutucu: beyazda 5:1, zeminde 4,7:1
+  "slate-500": "oklch(50% 0.046 257.417)", // ikincil yazı: beyazda 6:1
+  "teal-600": "oklch(54% 0.105 184.704)", // ana düğme: beyaz yazıyla 4,7:1
+};
+
 const SURFACE_DARK = "oklch(19% 0 0)"; // kartlar (bg-white), ~#141414
 const CANVAS_DARK = "oklch(14.5% 0 0)"; // sayfa zemini, ~#0a0a0a
 
@@ -75,9 +86,16 @@ function invertedBlock() {
   return lines.join("\n");
 }
 
+function lightBlock() {
+  return Object.entries(LIGHT_A11Y)
+    .map(([k, v]) => `  --color-${k}: ${v};`)
+    .join("\n");
+}
+
 function originalBlock() {
   const lines = ["  --color-white: #fff;", "  --app-canvas: #f4f6f8;"];
-  for (const h of ["slate", ...HUES]) for (const s of STEPS) if (vars[h][s]) lines.push(`  --color-${h}-${s}: ${vars[h][s]};`);
+  for (const h of ["slate", ...HUES])
+    for (const s of STEPS) if (vars[h][s]) lines.push(`  --color-${h}-${s}: ${LIGHT_A11Y[`${h}-${s}`] ?? vars[h][s]};`);
   return lines.join("\n");
 }
 
@@ -85,6 +103,7 @@ const css = `/* Bu dosya scripts/generate-dark-theme.mjs ile üretilir; elle dü
 
 :root {
   --app-canvas: #f4f6f8;
+${lightBlock()}
 }
 
 html.dark {

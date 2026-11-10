@@ -59,13 +59,19 @@ export function NotificationBell({
     return { unread: Math.max(0, s.unread - 1), items: s.items.filter((n) => n.id !== op.id) };
   });
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Odak paneldeyse zile dönsün (panel kapanınca kaybolmasın)
+      if (rootRef.current?.contains(document.activeElement)) buttonRef.current?.focus();
+      setOpen(false);
+    };
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -99,6 +105,7 @@ export function NotificationBell({
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={label}
@@ -108,7 +115,7 @@ export function NotificationBell({
       >
         <Bell className="size-[18px]" />
         {state.unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-none font-bold text-white ring-2 ring-[#141414]">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] leading-none font-bold text-white ring-2 ring-[#141414]">
             {state.unread > 99 ? "99+" : state.unread}
           </span>
         )}

@@ -35,7 +35,7 @@ export type ActionTask = EditableTask & {
 
 // mode:
 //  "assignee" → Görevlerim: Kabul Et / Kontrole Gönder
-//  "owner"    → Atadığım Görevler: Düzenle / Revize Ver / Tamamlandı / Sil
+//  "owner"    → Atadığım görevler: Düzenle / Revize ver / Tamamla / Sil
 //  "detail"   → Görev detayı: kişiye göre geçerli olan tüm butonlar
 export function TaskActions({
   task: serverTask,
@@ -112,7 +112,7 @@ export function TaskActions({
             className={smallPrimaryButton}
           >
             <Hand className="size-4" />
-            {task.assigned_to === null ? "Üstlen ve kabul et" : "Kabul Et"}
+            {task.assigned_to === null ? "Üstlen ve kabul et" : "Kabul et"}
           </button>
         )}
         {showReview && (
@@ -139,9 +139,9 @@ export function TaskActions({
           <button
             type="button"
             onClick={() => setRevising(true)}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-amber-500 px-2.5 text-xs font-semibold text-white transition hover:bg-amber-600"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-amber-700 px-2.5 text-xs font-semibold text-white transition hover:bg-amber-800"
           >
-            <RotateCcw className="size-4" /> Revize Ver
+            <RotateCcw className="size-4" /> Revize ver
           </button>
         )}
         {showComplete && (
@@ -156,7 +156,7 @@ export function TaskActions({
             }
             className={smallSecondaryButton}
           >
-            <CheckCheck className="size-4" /> Tamamlandı
+            <CheckCheck className="size-4" /> Tamamla
           </button>
         )}
         {showOwnerTools && (

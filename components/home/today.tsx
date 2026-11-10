@@ -125,7 +125,7 @@ const getFocus = cache(async () => {
       key: "review",
       title: "Kontrolünü bekleyen",
       dot: "bg-sky-500",
-      more: { href: "/atadigim-gorevler", label: "Atadığım Görevler" },
+      more: { href: "/atadigim-gorevler", label: "Atadığım görevler" },
       tasks: take((review.data ?? []) as FocusTask[]),
     },
     {

@@ -245,7 +245,7 @@ export async function submitForReview(taskId: string): Promise<ActionResult> {
   return { error: null };
 }
 
-// Revize Ver: kontroldeki görev, atayan kişi tarafından "Yapılıyor"a geri döner.
+// Revize ver: kontroldeki görev, atayan kişi tarafından "Yapılıyor"a geri döner.
 // İsteğe bağlı not, görevin yorumlarına "Revize" başlığıyla eklenir; görevi alan kişi
 // düzeltip yeniden kontrole gönderir.
 export async function requestRevision(taskId: string, note = ""): Promise<ActionResult> {

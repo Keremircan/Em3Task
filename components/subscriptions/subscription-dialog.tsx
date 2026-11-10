@@ -532,7 +532,7 @@ function Switch({
         onClick={() => onChange(!checked)}
         disabled={disabled}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-60 ${
-          checked ? "bg-teal-600" : "bg-slate-300"
+          checked ? "bg-teal-600" : "bg-slate-400"
         }`}
       >
         <span

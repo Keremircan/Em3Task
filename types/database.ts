@@ -1,7 +1,7 @@
 // supabase/schema.sql + supabase/revize.sql ile birebir eşleşen tipler.
 // Şema değişirse burayı da güncelleyin.
 
-// pending: Onay Bekliyor · in_progress: Yapılıyor · review: Kontrol · done: Tamamlandı
+// pending: Kabul bekliyor · in_progress: Yapılıyor · review: Kontrol · done: Tamamlandı
 export type TaskStatus = "pending" | "in_progress" | "review" | "done";
 // none: Önceliksiz · low: Düşük · medium: Orta · high: Yüksek · urgent: Acil
 export type TaskPriority = "none" | "low" | "medium" | "high" | "urgent";

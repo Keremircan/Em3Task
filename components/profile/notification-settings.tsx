@@ -50,7 +50,7 @@ export function NotificationSettings() {
           disabled={!available || push.busy}
           onClick={() => void (on ? push.disable() : push.enable())}
           className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
-            on ? "bg-teal-600" : "bg-slate-300"
+            on ? "bg-teal-600" : "bg-slate-400"
           }`}
         >
           <span

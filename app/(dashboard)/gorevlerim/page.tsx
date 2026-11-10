@@ -47,7 +47,7 @@ async function MyTasks() {
       <OptimisticTasksProvider tasks={all}>
         <div className="space-y-4">
           <TaskSection
-            title="Onay bekleyenler"
+            title="Kabul bekleyenler"
             tasks={all}
             statuses={["pending"]}
             userId={userId}

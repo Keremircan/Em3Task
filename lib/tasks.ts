@@ -8,7 +8,7 @@ export const TASK_STATUSES: TaskStatus[] = [
 ];
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
-  pending: "Onay Bekliyor",
+  pending: "Kabul bekliyor",
   in_progress: "Yapılıyor",
   review: "Kontrol",
   done: "Tamamlandı",
@@ -16,7 +16,7 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 
 // Proje panosundaki sütun başlıkları (soldan sağa)
 export const BOARD_COLUMNS: { status: TaskStatus; title: string }[] = [
-  { status: "pending", title: "Yeni" },
+  { status: "pending", title: "Kabul bekliyor" },
   { status: "in_progress", title: "Yapılıyor" },
   { status: "review", title: "Kontrol" },
   { status: "done", title: "Tamamlandı" },
@@ -64,7 +64,7 @@ export type WorkflowTask = {
   created_by: string | null;
 };
 
-// Onay bekleyen görevi; atanan kişi ya da "Herkes"e açıksa herhangi biri kabul eder
+// Kabul bekleyen görevi; atanan kişi ya da "Herkes"e açıksa herhangi biri kabul eder
 export function canAccept(task: WorkflowTask, userId: string) {
   return (
     task.status === "pending" &&
@@ -77,7 +77,7 @@ export function canSubmitForReview(task: WorkflowTask, userId: string) {
   return task.status === "in_progress" && task.assigned_to === userId;
 }
 
-// Revize Ver: kontroldeki görevi sadece atayan kişi "Yapılıyor"a geri gönderir
+// Revize ver: kontroldeki görevi sadece atayan kişi "Yapılıyor"a geri gönderir
 export function canRequestRevision(task: WorkflowTask, userId: string) {
   return task.status === "review" && task.created_by === userId;
 }

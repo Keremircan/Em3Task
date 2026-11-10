@@ -67,7 +67,7 @@ export function ResetRequestForm() {
 function BackToLogin() {
   return (
     <Link href="/login" className="inline-flex items-center justify-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-800">
-      <ArrowLeft className="size-3.5" /> Girişe dön
+      <ArrowLeft className="size-3.5" /> Giriş sayfasına dön
     </Link>
   );
 }

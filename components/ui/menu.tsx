@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
 
@@ -62,7 +62,10 @@ export function Menu({
       }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key !== "Escape") return;
+      // Odak menüdeyse açan düğmeye geri dönsün (kaybolup sayfanın başına düşmesin)
+      if (panelRef.current?.contains(document.activeElement)) buttonRef.current?.focus();
+      setOpen(false);
     }
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -74,11 +77,36 @@ export function Menu({
     };
   }, [open]);
 
+  // Açılınca odak ilk seçeneğe geçer: menü sayfanın sonuna eklendiği için
+  // klavyeyle Tab'la ulaşılamazdı
+  useEffect(() => {
+    if (open) panelRef.current?.querySelector<HTMLElement>("[role^=menuitem]")?.focus({ preventScroll: true });
+  }, [open]);
+
+  // Menü içinde ok tuşları, Home/End; Tab menüyü kapatıp sayfada sıradaki öğeye geçer
+  function onPanelKey(e: ReactKeyboardEvent<HTMLDivElement>) {
+    const items = [...(panelRef.current?.querySelectorAll<HTMLElement>("[role^=menuitem]") ?? [])];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const go = (n: number) => {
+      e.preventDefault();
+      items[(n + items.length) % items.length]?.focus();
+    };
+    if (e.key === "ArrowDown") go(i + 1);
+    else if (e.key === "ArrowUp") go(i - 1);
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(items.length - 1);
+    else if (e.key === "Tab") {
+      buttonRef.current?.focus();
+      setOpen(false);
+    }
+  }
+
   const panel =
     tone === "dark"
       ? "theme-fixed border-white/10 bg-[#1f1f1f] text-neutral-200 shadow-black/40"
       : "border-slate-200 bg-white text-slate-700 shadow-slate-900/10";
-  const itemHover = tone === "dark" ? "hover:bg-white/8" : "hover:bg-slate-50";
+  const itemHover =
+    tone === "dark" ? "hover:bg-white/8 focus-visible:bg-white/8" : "hover:bg-slate-50 focus-visible:bg-slate-50";
 
   return (
     <div ref={rootRef} className="relative">
@@ -102,6 +130,8 @@ export function Menu({
         <div
           ref={panelRef}
           role="menu"
+          aria-label={label}
+          onKeyDown={onPanelKey}
           style={pos}
           className={`fixed z-[60] min-w-48 overflow-hidden rounded-xl border p-1 shadow-xl ${panel}`}
         >
@@ -114,14 +144,19 @@ export function Menu({
                 type="button"
                 role={checkable ? "menuitemcheckbox" : "menuitem"}
                 aria-checked={checkable ? item.checked : undefined}
+                tabIndex={-1}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!checkable) setOpen(false);
+                  if (!checkable) {
+                    // Odak açan düğmeye döner; seçenek bir pencere açarsa odak oraya geçer
+                    buttonRef.current?.focus();
+                    setOpen(false);
+                  }
                   item.onSelect();
                 }}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${itemHover} ${
-                  item.danger ? "text-rose-500" : ""
+                  item.danger ? (tone === "dark" ? "text-rose-400" : "text-rose-600") : ""
                 }`}
               >
                 {checkable && (

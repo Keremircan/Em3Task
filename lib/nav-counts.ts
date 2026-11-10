@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getUserId } from "@/lib/auth";
 
 // Menüdeki rozetler: sizden işlem bekleyen görev sayıları.
-//   accept: kabul etmenizi bekleyen (size ya da "Herkes"e atanmış, Onay Bekliyor)
+//   accept: kabul etmenizi bekleyen (size ya da "Herkes"e atanmış, Kabul bekliyor)
 //   review: kontrolünüzü bekleyen (sizin atadığınız, Kontrol'de)
 // Aynı istekte sidebar ve alt sekme çubuğu çağırır; sorgu bir kez atılır.
 export type NavCounts = { accept: number; review: number };

@@ -66,7 +66,7 @@ export function HowItWorks({ className = "" }: { className?: string }) {
       </div>
       <ol className="mt-3 grid grid-cols-1 gap-3 text-[13.5px] text-slate-600 md:grid-cols-2">
         <Step n={1} title="İş ata">
-          Atadığım Görevler’den projesini ve kişisini seçerek işi oluşturun. Görev “Onay Bekliyor”
+          Atadığım görevler’den projesini ve kişisini seçerek işi oluşturun. Görev “Kabul bekliyor”
           olarak başlar.
         </Step>
         <Step n={2} title="Kabul et">

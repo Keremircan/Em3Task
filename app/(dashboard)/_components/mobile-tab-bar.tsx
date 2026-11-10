@@ -48,7 +48,7 @@ export function MobileTabBarList({ pathname, counts }: { pathname: string | null
                 <span className="relative">
                   <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} />
                   {n > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-teal-500 px-1 text-center text-[9.5px] leading-4 font-bold text-white tabular-nums ring-2 ring-[#141414]">
+                    <span className="absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-teal-600 px-1 text-center text-[9.5px] leading-4 font-bold text-white tabular-nums ring-2 ring-[#141414]">
                       {n > 9 ? "9+" : n}
                       <span className="sr-only"> görev {BADGE_HINT[badge!]}</span>
                     </span>

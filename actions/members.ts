@@ -42,7 +42,7 @@ export async function addMember(input: {
   if (!isUuid(input.id)) return { error: "Geçersiz istek." };
   if (!fullName) return { error: "Ad soyad zorunludur." };
   if (fullName.length > 80) return { error: "Ad soyad en fazla 80 karakter olabilir." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Geçerli bir e-posta girin." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Geçerli bir e-posta adresi girin." };
   if (password.length < 8) return { error: "Şifre en az 8 karakter olmalı." };
   if (password.length > 72) return { error: "Şifre en fazla 72 karakter olabilir." };
 

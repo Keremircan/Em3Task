@@ -279,7 +279,7 @@ export function TaskFormDialog({
                     disabled={pending}
                     onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
                     aria-label={`${f.name} dosyasını çıkar`}
-                    className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                    className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                   >
                     <X className="size-4" />
                   </button>

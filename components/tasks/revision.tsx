@@ -24,7 +24,7 @@ export function RevisionBadge({ count, size = "sm" }: { count: number; size?: "x
   );
 }
 
-// Revize Ver penceresi: isteğe bağlı not yazılır; onaylanınca pencere hemen kapanır
+// Revize ver penceresi: isteğe bağlı not yazılır; onaylanınca pencere hemen kapanır
 export function RevisionDialog({
   open,
   onClose,
@@ -73,7 +73,7 @@ export function RevisionDialog({
           </button>
           <button
             type="submit"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-amber-500 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-amber-700 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-800"
           >
             <RotateCcw className="size-4" strokeWidth={2.4} /> Revize ver
           </button>
@@ -84,7 +84,7 @@ export function RevisionDialog({
 }
 
 // Görev detayında: revize verildikten sonra ("Yapılıyor"a dönmüş görev) bilgi kutusu.
-// İyimser durumu okur; Revize Ver'e basılınca hemen görünür.
+// İyimser durumu okur; Revize ver'e basılınca hemen görünür.
 export function RevisionNotice({
   id,
   status,

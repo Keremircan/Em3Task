@@ -48,7 +48,7 @@ const NAV_GROUPS: { title: string | null; links: NavLink[] }[] = [
       },
       {
         href: "/atadigim-gorevler",
-        label: "Atadığım Görevler",
+        label: "Atadığım görevler",
         icon: ClipboardList,
         badge: { key: "review", hint: "kontrolünüzü bekliyor" },
       },

@@ -13,7 +13,7 @@ import { PageHeader } from "../_components/page-header";
 export const metadata: Metadata = { title: "Abonelikler · Em3Task" };
 
 export default function SubscriptionsPage() {
-  // SubscriptionsSync: üstteki "Yeni Ekle" ile eklenen kayıt, sunucunun yenilenmiş
+  // SubscriptionsSync: üstteki "Yeni abonelik" ile eklenen kayıt, sunucunun yenilenmiş
   // listesi gelmeden de listede hemen görünsün
   return (
     <SubscriptionsSync>

@@ -103,7 +103,7 @@ export function BoardFilters({
           value={filters.person}
           onChange={(e) => set({ person: e.target.value })}
           aria-label="Sorumlu kişi"
-          className={`${chip(Boolean(filters.person))} max-w-36 pr-2 outline-none`}
+          className={`${chip(Boolean(filters.person))} max-w-36 pr-2 outline-none focus-visible:ring-2 focus-visible:ring-teal-600/50`}
         >
           <option value="">Tüm kişiler</option>
           {hasOpen && <option value="herkes">Herkes (sorumlu yok)</option>}

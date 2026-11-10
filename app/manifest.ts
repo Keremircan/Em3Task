@@ -27,7 +27,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: "Görevlerim", url: "/gorevlerim", icons: [{ src: "/icons/icon-192.png?v=3", sizes: "192x192" }] },
       { name: "Genel sohbet", url: "/genel", icons: [{ src: "/icons/icon-192.png?v=3", sizes: "192x192" }] },
       {
-        name: "Atadığım Görevler",
+        name: "Atadığım görevler",
         url: "/atadigim-gorevler",
         icons: [{ src: "/icons/icon-192.png?v=3", sizes: "192x192" }],
       },

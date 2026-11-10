@@ -9,7 +9,7 @@ import { OptimisticTasksProvider } from "@/components/tasks/optimistic-tasks";
 import { PageHeader } from "../_components/page-header";
 import { ListSkeleton } from "../_components/list-parts";
 
-export const metadata: Metadata = { title: "Atadığım Görevler · Em3Task" };
+export const metadata: Metadata = { title: "Atadığım görevler · Em3Task" };
 
 export default function AssignedByMePage() {
   return (

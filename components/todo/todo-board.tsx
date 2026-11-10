@@ -145,7 +145,7 @@ export function TodoBoard({ todos, projectNames }: { todos: Todo[]; projectNames
             type="button"
             onClick={() => setError(null)}
             aria-label="Uyarıyı kapat"
-            className="rounded p-0.5 text-rose-500 hover:bg-rose-50"
+            className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-rose-600 hover:bg-rose-50"
           >
             <X className="size-3.5" />
           </button>

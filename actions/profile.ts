@@ -83,7 +83,7 @@ export async function updateAccount(input: {
   if (!fullName) return { error: "Ad soyad boş olamaz." };
   if (fullName.length > 80) return { error: "Ad soyad en fazla 80 karakter olabilir." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-    return { error: "Geçerli bir e-posta girin." };
+    return { error: "Geçerli bir e-posta adresi girin." };
   }
 
   const emailChanged = email !== user.email.toLowerCase();

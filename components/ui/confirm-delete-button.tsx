@@ -62,7 +62,7 @@ export function ConfirmDeleteButton({
         }}
         aria-label={label}
         title={label}
-        className={`shrink-0 rounded-md p-1.5 text-slate-300 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 ${
+        className={`shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 ${
           reveal && !error ? "opacity-0 group-hover:opacity-100 max-md:opacity-100" : ""
         }`}
       >

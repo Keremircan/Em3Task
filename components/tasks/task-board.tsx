@@ -12,8 +12,10 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
   type DragStartEvent,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import { CalendarClock, ChevronRight, GripVertical, Plus, RotateCcw, Users } from "lucide-react";
 import { TaskFormDialog, type TaskFormOptions } from "./task-form-dialog";
@@ -68,7 +70,7 @@ const MOVE_HINT: Record<BoardMove, string> = {
 // sütuna geçer, kaydedilemezse geri döner. Üstte kişi / öncelik / etiket süzgeçleri var.
 type NewTask = { options: TaskFormOptions; projectId: string };
 
-// Boş sütunda iş akışını anlatan kısa not ("Yeni" sütununda bunun yerine "Görev ekle" var)
+// Boş sütunda iş akışını anlatan kısa not ("Kabul bekliyor" sütununda bunun yerine "Görev ekle" var)
 const EMPTY_HINT: Record<TaskStatus, string> = {
   pending: "Yeni görev yok",
   in_progress: "Kabul edilen işler burada görünür",
@@ -83,7 +85,7 @@ export function TaskBoard({
 }: {
   tasks: BoardTask[];
   userId: string;
-  newTask?: NewTask; // verilirse "Yeni" sütununda "Görev ekle" çıkar
+  newTask?: NewTask; // verilirse "Kabul bekliyor" sütununda "Görev ekle" çıkar
 }) {
   return (
     <OptimisticTasksProvider tasks={tasks}>
@@ -149,6 +151,22 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
     navigator.vibrate?.(12);
   }
 
+  // Ekran okuyucu duyuruları (kütüphanenin varsayılanları İngilizce)
+  const titleOf = (id: UniqueIdentifier) => `“${all.find((t) => t.id === id)?.title ?? "Kart"}”`;
+  const columnOf = (id: UniqueIdentifier) => STATUS_LABELS[id as TaskStatus] ?? String(id);
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `${titleOf(active.id)} kartı alındı.`,
+    onDragOver: ({ active, over }) =>
+      over
+        ? `${titleOf(active.id)}, ${columnOf(over.id)} sütununun üzerinde.`
+        : `${titleOf(active.id)} bir sütunun üzerinde değil.`,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? `${titleOf(active.id)} ${columnOf(over.id)} sütununa bırakıldı.`
+        : `${titleOf(active.id)} bırakıldı, yeri değişmedi.`,
+    onDragCancel: ({ active }) => `Taşıma iptal edildi; ${titleOf(active.id)} yerinde kaldı.`,
+  };
+
   function onDragEnd(e: DragEndEvent) {
     setActiveId(null);
     // Sürükleme bitince oluşan tıklama bağlantıyı açmasın
@@ -179,6 +197,7 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
           onDragEnd={onDragEnd}
           onDragCancel={() => setActiveId(null)}
           accessibility={{
+            announcements,
             screenReaderInstructions: {
               draggable:
                 "Kartı taşımak için boşluk tuşuna basın, ok tuşlarıyla sütun seçin, bırakmak için tekrar boşluğa basın. Vazgeçmek için Esc.",
@@ -215,7 +234,7 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
                       Buraya bırakın
                     </li>
                   ) : column.status === "pending" && newTask && !active ? (
-                    // "Yeni" sütununun altında her zaman: bu projeye hızlı görev ekleme
+                    // "Kabul bekliyor" sütununun altında her zaman: bu projeye hızlı görev ekleme
                     <li>
                       <button
                         type="button"
@@ -372,7 +391,7 @@ function DraggableCard({
         {...attributes}
         {...listeners}
         aria-label={`${task.title} kartını taşı`}
-        className="absolute top-2 left-0.5 z-[1] flex h-6 w-4 cursor-grab touch-none items-center justify-center rounded text-slate-300 opacity-0 transition group-hover/card:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
+        className="absolute top-2 left-0.5 z-[1] flex h-6 w-4 cursor-grab touch-none items-center justify-center rounded text-slate-400 opacity-0 transition group-hover/card:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
       >
         <GripVertical className="size-3.5" />
       </button>
@@ -423,7 +442,7 @@ function DraggableCard({
             onClick={onRevision}
             className="inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-amber-50 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 transition ring-inset hover:bg-amber-100"
           >
-            <RotateCcw className="size-3.5" strokeWidth={2.4} /> Revize Ver
+            <RotateCcw className="size-3.5" strokeWidth={2.4} /> Revize ver
           </button>
         </div>
       )}

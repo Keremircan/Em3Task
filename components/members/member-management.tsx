@@ -63,7 +63,7 @@ export function MembersProvider({ children }: { children: ReactNode }) {
             type="button"
             onClick={() => setError(null)}
             aria-label="Uyarıyı kapat"
-            className="rounded p-0.5 text-rose-500 hover:bg-rose-50"
+            className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-rose-600 hover:bg-rose-50"
           >
             <X className="size-3.5" />
           </button>
@@ -156,7 +156,7 @@ export function AddMemberButton() {
             const password = String(form.get("password") ?? "");
             // Kolay hatalar pencere kapanmadan gösterilsin
             if (!fullName) return setError("Ad soyad zorunludur.");
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Geçerli bir e-posta girin.");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Geçerli bir e-posta adresi girin.");
             if (password.length < 8) return setError("Şifre en az 8 karakter olmalı.");
             const id = crypto.randomUUID();
             close();
@@ -308,7 +308,7 @@ export function MemberPermissionToggle({ allowAll }: { allowAll: boolean }) {
           aria-labelledby="perm-label"
           onClick={toggle}
           className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-            optimistic ? "bg-teal-600" : "bg-slate-300"
+            optimistic ? "bg-teal-600" : "bg-slate-400"
           }`}
         >
           <span

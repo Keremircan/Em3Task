@@ -20,6 +20,13 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen flex-1 bg-[var(--app-canvas)]">
+      {/* Klavyeyle ilk Tab'da görünür: menüdeki bağlantıları atlayıp sayfa içeriğine geçer */}
+      <a
+        href="#icerik"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-3.5 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
+      >
+        İçeriğe geç
+      </a>
       <SidebarShell
         mobileTitle={
           <Suspense fallback={<MobileTitleText label="PANO" title="Em3Task" />}>
@@ -61,7 +68,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
       </SidebarShell>
 
       {/* Mobilde üstte sabit çubuk, altta sekme çubuğu var: içerik ikisinin arasında kalır */}
-      <main className="flex min-w-0 flex-1 flex-col px-4 pt-[calc(4.25rem+env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pt-6 lg:pb-5">
+      <main id="icerik" tabIndex={-1} className="flex min-w-0 flex-1 flex-col px-4 outline-none pt-[calc(4.25rem+env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pt-6 lg:pb-5">
         {/* flex: sayfalar (ör. proje panosu) kalan yüksekliği doldurabilir */}
         <div className="flex flex-1 flex-col">{children}</div>
         <footer className="mt-8 hidden text-xs text-slate-400 lg:block">

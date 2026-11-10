@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 const TITLES: Record<string, string> = {
   "/": "Ana sayfa",
   "/genel": "Genel",
-  "/atadigim-gorevler": "Atadığım Görevler",
+  "/atadigim-gorevler": "Atadığım görevler",
   "/gorevlerim": "Görevlerim",
   "/uyeler": "Üyeler",
   "/todo": "Yapılacaklar",

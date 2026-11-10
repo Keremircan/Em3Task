@@ -102,7 +102,7 @@ export function OverdueAssignedView({ tasks }: { tasks: OverdueAssignedTask[] })
           href="/atadigim-gorevler"
           className="mt-1 inline-flex items-center gap-1 text-[13px] font-semibold text-teal-700 hover:underline"
         >
-          +{tasks.length - LIMIT} görev daha · Atadığım Görevler
+          +{tasks.length - LIMIT} görev daha · Atadığım görevler
         </Link>
       )}
     </section>

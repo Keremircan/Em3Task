@@ -116,7 +116,7 @@ function CollapsibleSection({
   );
 }
 
-// Atadığım Görevler ve Görevlerim sayfalarının ortak satır listesi
+// Atadığım görevler ve Görevlerim sayfalarının ortak satır listesi
 export function TaskList({
   tasks,
   userId,
