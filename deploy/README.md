@@ -213,7 +213,8 @@ order by created desc limit 3;
 
 ## Güncelleme (her yeni sürümde)
 
-`master`'a gönderilen her değişiklikten sonra Actions imajı derler (yaklaşık 3–5 dk). Sonra sunucuda:
+`master`'a gönderilen her değişiklikten sonra Actions imajı derler (yaklaşık 3–5 dk).
+GitHub → Actions'ta yeşil tik görüldükten sonra sunucuda:
 
 ```bash
 cd /opt/em3task
@@ -222,7 +223,22 @@ docker compose up -d
 docker image prune -f
 ```
 
-Japar'a dokunmaz; Caddy'nin yeniden yüklenmesi gerekmez.
+- `up` satırında `Recreated` / `Started` yazıyorsa yeni sürüm devrede; `Running` yazıyorsa
+  çekilen imaj eskisiyle aynıdır (derleme henüz bitmemiştir ya da değişiklik yoktur).
+- Japar'ın kapsayıcılarına dokunmaz; Caddy'nin yeniden yüklenmesi gerekmez.
+- `docker image prune -f` sunucudaki **tüm** kullanılmayan eski imajları siler, Japar'ınkiler
+  dahil (Docker ortaktır). Çalışan hiçbir şeyi etkilemez; Japar tarafı bunun rutinde
+  kalmasını onayladı (10 Kasım 2026).
+
+> **Bu sunucuda ASLA çalıştırılmayacak komutlar:**
+>
+> - `docker system prune --volumes`
+> - `docker volume prune`
+>
+> Japar o anda durmuşsa veritabanı ve dosya deposu volume'larını silerler; bu geri dönüşü
+> olmayan veri kaybıdır. Genel kural: volume silen hiçbir komut (`-v` / `--volumes` içeren
+> `down` ya da `prune`) bu sunucuda kullanılmaz. Em3Task'in sunucuda volume'u yoktur,
+> dolayısıyla böyle bir komuta hiç ihtiyacı olmaz.
 
 ## Sorun çıkarsa
 
