@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarClock, CalendarDays, FolderKanban, Hand } from "lucide-react";
+import { ArrowLeft, CalendarClock, CalendarDays, FolderKanban, Hand, Lock, Repeat } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { isUuid } from "@/lib/tasks";
+import { isLocked, isUuid, openBlockerCount } from "@/lib/tasks";
 import { PriorityControl } from "@/components/tasks/priority-control";
 import { DueBadge } from "@/components/tasks/due-badge";
 import { TaskChecklist } from "@/components/tasks/task-checklist";
@@ -29,6 +29,8 @@ import { TaskComments } from "@/components/tasks/task-comments";
 import { REACTIONS_SELECT } from "@/lib/reactions";
 import { TaskAttachments, type TaskAttachment } from "@/components/tasks/task-attachments";
 import { TaskLinks } from "@/components/tasks/task-links";
+import { TaskDependencies } from "@/components/tasks/task-dependencies";
+import { LockBadge } from "@/components/tasks/lock-badge";
 
 export const metadata: Metadata = { title: "Görev detayı · Em3Task" };
 
@@ -96,16 +98,19 @@ async function TaskDetail({
     taskLabelsRes,
     allLabelsRes,
     timeRes,
+    candidatesRes,
   ] = await Promise.all([
     getCurrentUser(),
     supabase
       .from("tasks")
       .select(
         `id, title, description, status, priority, due_date, project_id, assigned_to, created_by,
-         accepted_at, revision_count, created_at,
+         accepted_at, revision_count, created_at, recurring_id,
          project:projects!tasks_project_id_fkey(id, name),
          assignee:profiles!tasks_assigned_to_fkey(full_name),
-         creator:profiles!tasks_created_by_fkey(full_name)`,
+         creator:profiles!tasks_created_by_fkey(full_name),
+         blockers:task_dependencies!task_dependencies_task_id_fkey(blocker:tasks!task_dependencies_depends_on_id_fkey(id, title, status)),
+         dependents:task_dependencies!task_dependencies_depends_on_id_fkey(dependent:tasks!task_dependencies_task_id_fkey(id, title, status))`,
       )
       .eq("id", id)
       .maybeSingle(),
@@ -134,6 +139,14 @@ async function TaskDetail({
       .select("id, user_id, started_at, ended_at, note, user:profiles!time_entries_user_id_fkey(full_name)")
       .eq("task_id", id)
       .order("started_at", { ascending: false }),
+    // Ön görev olarak seçilebilecekler: tamamlanmamış diğer görevler
+    supabase
+      .from("tasks")
+      .select("id, title, project:projects!tasks_project_id_fkey(name)")
+      .neq("status", "done")
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(300),
   ]);
 
   const task = taskRes.data;
@@ -179,6 +192,16 @@ async function TaskDetail({
     .filter((l) => user.isAdmin || l.authorIds.includes(user.id))
     .map((l) => l.url);
 
+  // Ön görevler (bu görevden önce bitmesi gerekenler) ve bu görevi bekleyenler
+  const blockers = task.blockers.flatMap((b) => (b.blocker ? [b.blocker] : []));
+  const dependents = task.dependents.flatMap((d) => (d.dependent ? [d.dependent] : []));
+  const linkedIds = new Set([...blockers, ...dependents].map((t) => t.id));
+  const candidates = (candidatesRes.data ?? [])
+    .filter((c) => !linkedIds.has(c.id))
+    .map((c) => ({ id: c.id, title: c.title, project: c.project?.name ?? null }));
+  const canEditDependencies = task.created_by === user.id || user.isAdmin;
+  const locked = isLocked(task);
+
   const creatorName = task.creator?.full_name ?? "Eski üye";
   const isOpen = task.assigned_to === null;
   const assigneeName = isOpen ? "Herkes" : (task.assignee?.full_name ?? "Eski üye");
@@ -209,9 +232,19 @@ async function TaskDetail({
             <section className={`${card} p-4 sm:p-5`}>
               <div className="flex flex-wrap items-center gap-2">
                 <OptimisticStatusBadge id={task.id} status={task.status} />
+                <LockBadge status={task.status} blockers={task.blockers} />
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
                 <DueBadge due={task.due_date} status={task.status} />
+                {task.recurring_id && (
+                  <span
+                    title="Bu görev tekrarlayan bir görevden kendiliğinden açıldı"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md bg-teal-50 px-2 py-0.5 text-xs font-bold text-teal-700 ring-1 ring-teal-200 ring-inset"
+                  >
+                    <Repeat className="size-3" strokeWidth={2.6} />
+                    Tekrarlayan
+                  </span>
+                )}
               </div>
               <div className="mt-2.5">
                 <LabelPicker
@@ -232,6 +265,12 @@ async function TaskDetail({
                 revisionCount={task.revision_count}
                 isAssignee={task.assigned_to === user.id}
               />
+              {locked && (
+                <p className="mt-3 flex items-center gap-2 rounded-xl bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700">
+                  <Lock className="size-4 shrink-0" />
+                  Bu görev kilitli: {openBlockerCount(task.blockers)} ön görev tamamlanmadan kabul edilemez.
+                </p>
+              )}
               {isOpen && task.status === "pending" && (
                 <p className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
                   <Hand className="size-4 shrink-0" />
@@ -303,6 +342,18 @@ async function TaskDetail({
               <p className="text-slate-400">Bu görev için açıklama eklenmemiş.</p>
             )}
           </section>
+
+          {/* Ön görevler: bağ varsa herkese, yoksa sadece ekleyebilecek kişiye görünür */}
+          {(blockers.length > 0 || dependents.length > 0 || (canEditDependencies && task.status !== "done")) && (
+            <TaskDependencies
+              taskId={task.id}
+              blockers={blockers}
+              dependents={dependents}
+              candidates={candidates}
+              canEdit={canEditDependencies}
+              canAdd={task.status !== "done"}
+            />
+          )}
 
           {/* Görevi atayan, sorumlusu ve Admin düzenler; "Herkes" görevinde ekip */}
           <TaskChecklist

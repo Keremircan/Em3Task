@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   "/takvim": "Takvim",
   "/ara": "Arama",
   "/raporlar": "Raporlar",
+  "/hatalar": "Hata kayıtları",
   "/profil": "Profil",
 };
 
@@ -40,6 +41,7 @@ const GROUP_LABEL: Record<string, string> = {
   "/genel": "EKİP",
   "/uyeler": "EKİP",
   "/raporlar": "EKİP",
+  "/hatalar": "EKİP",
   "/todo": "KİŞİSEL",
   "/abonelikler": "KİŞİSEL",
   "/profil": "HESAP",

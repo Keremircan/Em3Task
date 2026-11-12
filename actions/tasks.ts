@@ -5,16 +5,13 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser, getUserId } from "@/lib/auth";
 import { clip, notifyUsers } from "@/lib/push";
-import { EVERYONE, isTaskPriority, isUuid, MAX_REVISION_NOTE } from "@/lib/tasks";
+import { BLOCKERS_SELECT, isTaskPriority, isUuid, MAX_REVISION_NOTE, openBlockerCount } from "@/lib/tasks";
 import type { TaskPriority } from "@/types/database";
 import { ATTACHMENTS_BUCKET } from "@/lib/attachments";
-import { isDayString } from "@/lib/due";
+import { readTaskForm } from "@/lib/task-form";
 
 export type ActionResult = { error: string | null };
 export type CreateTaskResult = ActionResult & { taskId: string | null };
-
-const MAX_TITLE = 200;
-const MAX_DESCRIPTION = 50_000;
 
 const taskUrl = (id: string) => `/gorevler/${id}`;
 
@@ -38,43 +35,6 @@ function dbError(error: PostgrestError, fallback: string) {
   if (error.code === "42501" && error.message) return error.message;
   if (error.code === "23503") return "Seçilen proje veya kişi bulunamadı.";
   return fallback;
-}
-
-type TaskFields = {
-  title: string;
-  description: string | null;
-  project_id: string;
-  assigned_to: string | null;
-  priority: TaskPriority;
-  due_date: string | null;
-};
-
-function readTaskForm(formData: FormData): TaskFields | string {
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const projectId = formData.get("project_id");
-  const assignee = formData.get("assigned_to");
-  const priority = formData.get("priority") ?? "none";
-  const due = String(formData.get("due_date") ?? "").trim();
-
-  if (!title) return "Görev adı zorunludur.";
-  if (title.length > MAX_TITLE) return "Görev adı en fazla 200 karakter olabilir.";
-  if (description.length > MAX_DESCRIPTION) return "Görev açıklaması çok uzun.";
-  if (!isUuid(projectId)) return "Görevin bağlı olduğu projeyi seçin.";
-  if (assignee !== EVERYONE && !isUuid(assignee)) {
-    return "Görevi atayacağınız kişiyi seçin.";
-  }
-  if (!isTaskPriority(priority)) return "Geçersiz öncelik.";
-  if (due && !isDayString(due)) return "Geçersiz teslim tarihi.";
-
-  return {
-    title,
-    description: description || null,
-    project_id: projectId,
-    assigned_to: assignee === EVERYONE ? null : (assignee as string),
-    priority,
-    due_date: due || null,
-  };
 }
 
 export async function createTask(formData: FormData): Promise<CreateTaskResult> {
@@ -315,8 +275,42 @@ export async function completeTask(taskId: string): Promise<ActionResult> {
     return { error: "Görev ancak kabul edildikten sonra atayan kişi tarafından tamamlanabilir." };
   }
 
+  await notifyUnlocked(supabase, taskId, userId);
+
   revalidateAll();
   return { error: null };
+}
+
+// Tamamlanan görev başka görevlerin ön göreviyse: tüm ön görevleri biten ve hâlâ
+// kabul bekleyen görevlerin sorumlusuna "artık başlatılabilir" haberi gider.
+// ("Herkes"e açık görevde tüm ekibi rahatsız etmemek için sadece atayana.)
+async function notifyUnlocked(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  completedId: string,
+  actorId: string,
+) {
+  const { data } = await supabase
+    .from("task_dependencies")
+    .select(
+      `dependent:tasks!task_dependencies_task_id_fkey(id, title, status, assigned_to, created_by, ${BLOCKERS_SELECT})`,
+    )
+    .eq("depends_on_id", completedId);
+
+  for (const row of data ?? []) {
+    const task = row.dependent;
+    if (!task || task.status !== "pending" || openBlockerCount(task.blockers) > 0) continue;
+    notifyUsers(
+      [task.assigned_to ?? task.created_by],
+      {
+        title: "Görev artık başlatılabilir",
+        body: `Ön görevleri tamamlandı: ${clip(task.title)}`,
+        url: taskUrl(task.id),
+        tag: `task-${task.id}`,
+        kind: "task",
+      },
+      actorId,
+    );
+  }
 }
 
 // Öncelik: oturum açmış her ekip üyesi değiştirebilir (rol veya atayan/alan

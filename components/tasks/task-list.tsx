@@ -5,13 +5,14 @@ import Link from "next/link";
 import { CalendarClock, ChevronDown, FolderKanban, MessageSquare, UserRound } from "lucide-react";
 import type { TaskPriority, TaskStatus } from "@/types/database";
 import { formatDateTime } from "@/lib/format";
-import { previewText } from "@/lib/tasks";
+import { previewText, type BlockerRef } from "@/lib/tasks";
 import { StatusBadge } from "./status-badge";
 import { PriorityControl } from "./priority-control";
 import { DueBadge } from "./due-badge";
 import { ChecklistBadge, LabelChips } from "./label-chip";
 import { checklistProgress, taskLabels, type LabelLite } from "@/lib/labels";
 import { RevisionBadge } from "./revision";
+import { LockBadge } from "./lock-badge";
 import { TaskActions } from "./task-actions";
 import type { TaskFormOptions } from "./task-form-dialog";
 import { useShownTasks } from "./optimistic-tasks";
@@ -26,6 +27,7 @@ export type TaskListItem = {
   due_date: string | null;
   labels?: { label: LabelLite | null }[];
   checklist?: { is_done: boolean }[];
+  blockers?: BlockerRef[]; // ön görevler (tamamlanmamışsa görev kilitli)
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -76,13 +78,15 @@ export function TaskSection({
 }
 
 // Başlığa tıklayınca açılıp kapanan kart; sayfa her açıldığında kapalı gelir
-function CollapsibleSection({
+export function CollapsibleSection({
   title,
   count,
+  unit = "iş",
   children,
 }: {
   title: string;
   count: number;
+  unit?: string; // sayının yanındaki sözcük: "3 iş", "2 tekrar"
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -100,7 +104,9 @@ function CollapsibleSection({
           className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none sm:px-5"
         >
           <span className="flex-1 text-base font-bold text-slate-900">{title}</span>
-          <span className="text-sm text-slate-500">{count} iş</span>
+          <span className="text-sm text-slate-500">
+            {count} {unit}
+          </span>
           <ChevronDown
             aria-hidden
             className={`size-4.5 shrink-0 text-slate-400 transition group-hover:text-teal-700 ${
@@ -161,6 +167,7 @@ export function TaskList({
                   {task.title}
                 </Link>
                 <StatusBadge status={task.status} />
+                <LockBadge status={task.status} blockers={task.blockers} />
                 <RevisionBadge count={task.revision_count} />
                 <PriorityControl taskId={task.id} priority={task.priority} />
                 <DueBadge due={task.due_date} status={task.status} />

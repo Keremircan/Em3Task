@@ -1,13 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RotateCcw, WifiOff } from "lucide-react";
 import { primaryButton } from "@/components/ui/styles";
+import { reportClientError } from "@/actions/error-log";
 
 // Sayfa yüklenirken beklenmedik bir hata olursa gösterilen ekran.
 // Teknik ayrıntı gösterilmez; kullanıcıya ne yapacağı söylenir.
-export function ErrorView({ retry, fullScreen = false }: { retry: () => void; fullScreen?: boolean }) {
+export function ErrorView({
+  error,
+  retry,
+  fullScreen = false,
+}: {
+  error?: unknown;
+  retry: () => void;
+  fullScreen?: boolean;
+}) {
   const [offline] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
+
+  // Tarayıcıda oluşan hatayı Admin'in görebilmesi için kaydet. Sunucudan gelen hatalar
+  // (digest taşır) sunucuda zaten kaydedilir; bağlantı yokken de denenmez.
+  useEffect(() => {
+    if (offline || !error || typeof error !== "object") return;
+    const e = error as { message?: unknown; stack?: unknown; digest?: unknown };
+    if (typeof e.digest === "string" || typeof e.message !== "string") return;
+    reportClientError({
+      message: e.message,
+      stack: typeof e.stack === "string" ? e.stack : null,
+      path: window.location.pathname,
+    }).catch(() => {});
+  }, [error, offline]);
 
   return (
     <div

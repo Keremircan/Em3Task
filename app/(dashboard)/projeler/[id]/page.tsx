@@ -32,7 +32,7 @@ async function Board({ params }: Pick<PageProps<"/projeler/[id]">, "params">) {
     supabase
       .from("tasks")
       .select(
-        "id, title, status, priority, due_date, revision_count, created_at, assigned_to, created_by, creator:profiles!tasks_created_by_fkey(full_name, avatar_url), assignee:profiles!tasks_assigned_to_fkey(full_name, avatar_url), labels:task_labels(label:labels(id, name, color)), checklist:task_checklist_items(is_done)",
+        "id, title, status, priority, due_date, revision_count, created_at, assigned_to, created_by, creator:profiles!tasks_created_by_fkey(full_name, avatar_url), assignee:profiles!tasks_assigned_to_fkey(full_name, avatar_url), labels:task_labels(label:labels(id, name, color)), checklist:task_checklist_items(is_done), blockers:task_dependencies!task_dependencies_task_id_fkey(blocker:tasks!task_dependencies_depends_on_id_fkey(status))",
       )
       .eq("project_id", id)
       .order("created_at", { ascending: false }),

@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Bug,
   CalendarDays,
   ChartColumn,
   ChevronDown,
@@ -31,6 +32,7 @@ type NavLink = {
   label: string;
   icon: LucideIcon;
   badge?: { key: keyof NavCounts; hint: string }; // sizden işlem bekleyen görev sayısı
+  adminOnly?: boolean; // sadece Admin'in menüsünde görünür
 };
 
 // Menü grupları: başlıksız ilk grup günlük iş, sonra ekip ve kişisel sayfalar.
@@ -61,6 +63,7 @@ const NAV_GROUPS: { title: string | null; links: NavLink[] }[] = [
       { href: "/genel", label: "Genel", icon: MessagesSquare },
       { href: "/uyeler", label: "Üyeler", icon: Users },
       { href: "/raporlar", label: "Raporlar", icon: ChartColumn },
+      { href: "/hatalar", label: "Hata kayıtları", icon: Bug, adminOnly: true },
     ],
   },
   {
@@ -83,6 +86,7 @@ type Props = {
   projects: ProjectSummary[];
   userId: string;
   counts?: NavCounts;
+  isAdmin?: boolean;
 };
 
 export function SidebarNav(props: Props) {
@@ -94,6 +98,7 @@ export function SidebarNavList({
   projects,
   userId,
   counts,
+  isAdmin = false,
   pathname,
 }: Props & { pathname: string | null }) {
   const [projectsOpen, setProjectsOpen] = useState(true);
@@ -145,7 +150,7 @@ export function SidebarNavList({
         {NAV_GROUPS.map((group) => (
           <div key={group.title ?? "ana"} className="flex flex-col gap-0.5">
             {group.title && <p className={groupTitle}>{group.title}</p>}
-            {group.links.map(({ href, label, icon: Icon, badge }) => {
+            {group.links.filter((link) => isAdmin || !link.adminOnly).map(({ href, label, icon: Icon, badge }) => {
               const active = isActive(href);
               const n = badge && counts ? counts[badge.key] : 0;
               return (

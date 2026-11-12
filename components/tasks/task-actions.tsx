@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCheck, Hand, Pencil, RotateCcw, Send, Trash } from "lucide-react";
+import { CheckCheck, Hand, Lock, Pencil, RotateCcw, Send, Trash } from "lucide-react";
 import {
   acceptTask,
   completeTask,
@@ -10,7 +10,14 @@ import {
   requestRevision,
   submitForReview,
 } from "@/actions/tasks";
-import { canAccept, canComplete, canRequestRevision, canSubmitForReview } from "@/lib/tasks";
+import {
+  canAccept,
+  canComplete,
+  canRequestRevision,
+  canSubmitForReview,
+  isLocked,
+  type BlockerRef,
+} from "@/lib/tasks";
 import type { TaskStatus } from "@/types/database";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -31,6 +38,7 @@ import { safe } from "@/lib/safe-action";
 export type ActionTask = EditableTask & {
   status: TaskStatus;
   created_by: string | null;
+  blockers?: BlockerRef[] | null; // ön görevler: tamamlanmadan görev kabul edilemez
 };
 
 // mode:
@@ -66,6 +74,7 @@ export function TaskActions({
 
   const isOwner = task.created_by === userId;
   const showAccept = mode !== "owner" && canAccept(task, userId);
+  const locked = isLocked(task);
   const showReview = mode !== "owner" && canSubmitForReview(task, userId);
   const showComplete = mode !== "assignee" && isOwner && task.status !== "done";
   const completeAllowed = canComplete(task, userId);
@@ -109,9 +118,11 @@ export function TaskActions({
                 assignedTo: userId,
               })
             }
+            disabled={locked}
+            title={locked ? "Ön görevler tamamlanınca kabul edilebilir." : undefined}
             className={smallPrimaryButton}
           >
-            <Hand className="size-4" />
+            {locked ? <Lock className="size-4" /> : <Hand className="size-4" />}
             {task.assigned_to === null ? "Üstlen ve kabul et" : "Kabul et"}
           </button>
         )}
@@ -170,6 +181,9 @@ export function TaskActions({
         )}
       </div>
 
+      {showAccept && locked && (
+        <p className="text-xs text-slate-500">Ön görevler tamamlanınca kabul edilebilir.</p>
+      )}
       {showComplete && !completeAllowed && task.status === "pending" && (
         <p className="text-xs text-slate-400">Kabul edilince tamamlanabilir.</p>
       )}

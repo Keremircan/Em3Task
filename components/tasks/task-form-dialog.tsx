@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CircleAlert, Paperclip, SendHorizontal, X } from "lucide-react";
+import { CircleAlert, Paperclip, Repeat, SendHorizontal, X } from "lucide-react";
 import { createTask, updateTask } from "@/actions/tasks";
+import { createRecurringTask } from "@/actions/recurring";
 import { uploadAttachment } from "@/actions/task-details";
 import {
   ALLOWED_ATTACHMENT_TYPES,
@@ -11,6 +12,8 @@ import {
   MAX_ATTACHMENT_BYTES,
 } from "@/lib/attachments";
 import { EVERYONE } from "@/lib/tasks";
+import { todayKey } from "@/lib/days";
+import { DUE_AFTER_OPTIONS, FREQUENCIES, FREQUENCY_LABELS } from "@/lib/recurring";
 import type { TaskPriority } from "@/types/database";
 import { PrioritySelect } from "./priority-select";
 import { Modal } from "@/components/ui/modal";
@@ -51,7 +54,10 @@ export function TaskFormDialog({
   const [fileErrors, setFileErrors] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState<string | null>(null);
+  // Tekrar sıklığı ("" = tekrarlanmaz). Sadece yeni görevde seçilebilir.
+  const [repeat, setRepeat] = useState("");
   const editing = Boolean(task);
+  const repeating = !editing && repeat !== "";
 
   function close() {
     if (pending) return;
@@ -87,6 +93,12 @@ export function TaskFormDialog({
       if (task) {
         const result = await safe(updateTask(task.id, formData));
         if (result.error) return setError(result.error);
+      } else if (repeating) {
+        // Tekrarlayan görev: kayıt oluşur; ilk açılış bugünse ilk görev de hemen açılır
+        const result = await safe(createRecurringTask(formData));
+        if (result.error) return setError(result.error);
+        onClose();
+        return;
       } else {
         const result = await safe(createTask(formData));
         if (result.error || !result.taskId) {
@@ -229,74 +241,148 @@ export function TaskFormDialog({
               disabled={pending}
             />
           </div>
-          <div>
-            <label htmlFor="task-due" className={fieldLabel}>
-              Teslim tarihi <span className="font-normal text-slate-400">(isteğe bağlı)</span>
-            </label>
-            <input
-              id="task-due"
-              name="due_date"
-              type="date"
-              defaultValue={task?.due_date ?? ""}
-              disabled={pending}
-              className={`${field} h-10`}
-            />
-          </div>
+          {repeating ? (
+            <div>
+              <label htmlFor="task-repeat-due" className={fieldLabel}>
+                Teslim süresi
+              </label>
+              <SelectField id="task-repeat-due" name="repeat_due" defaultValue="" disabled={pending}>
+                <option value="">Teslim tarihi yok</option>
+                {DUE_AFTER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="task-due" className={fieldLabel}>
+                Teslim tarihi <span className="font-normal text-slate-400">(isteğe bağlı)</span>
+              </label>
+              <input
+                id="task-due"
+                name="due_date"
+                type="date"
+                defaultValue={task?.due_date ?? ""}
+                disabled={pending}
+                className={`${field} h-10`}
+              />
+            </div>
+          )}
+          {!editing && (
+            <div>
+              <label htmlFor="task-repeat" className={fieldLabel}>
+                Tekrar
+              </label>
+              <SelectField
+                id="task-repeat"
+                name="repeat"
+                value={repeat}
+                onChange={(e) => {
+                  setRepeat(e.target.value);
+                  // Tekrarlayan görevde dosya eki yok: seçilmiş dosyalar bırakılır
+                  if (e.target.value) {
+                    setFiles([]);
+                    setFileErrors([]);
+                  }
+                }}
+                disabled={pending}
+              >
+                <option value="">Tekrarlanmaz</option>
+                {FREQUENCIES.map((value) => (
+                  <option key={value} value={value}>
+                    {FREQUENCY_LABELS[value]}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          )}
+          {repeating && (
+            <div>
+              <label htmlFor="task-repeat-start" className={fieldLabel}>
+                İlk açılış
+              </label>
+              <input
+                id="task-repeat-start"
+                name="repeat_start"
+                type="date"
+                required
+                min={todayKey()}
+                defaultValue={todayKey()}
+                disabled={pending}
+                className={`${field} h-10`}
+              />
+            </div>
+          )}
         </div>
 
-        <div>
-          <span className={fieldLabel}>Görseller ve dokümanlar</span>
-          <label className="mt-2 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 py-2.5 transition hover:border-teal-300 hover:bg-teal-50/50">
-            <Paperclip className="size-5 text-teal-600" />
-            <span className="text-sm text-slate-600">
-              Dosya ekle <span className="text-slate-400">· görsel veya PDF, en fazla 10 MB</span>
+        {repeating && (
+          <p className="flex items-start gap-2 rounded-xl bg-teal-50 px-3.5 py-2.5 text-sm text-teal-900">
+            <Repeat className="mt-0.5 size-4 shrink-0 text-teal-700" />
+            <span>
+              Görev seçtiğiniz sıklıkta her sabah 09:00’da kendiliğinden açılır; ilk açılış bugünse
+              ilki şimdi açılır. Haftalık ve aylık tekrarda gün, ilk açılış tarihine göre belirlenir.
+              Tekrarı “Atadığım görevler” sayfasından duraklatabilir ya da silebilirsiniz.
             </span>
-            <input
-              type="file"
-              multiple
-              accept={ATTACHMENT_ACCEPT}
-              disabled={pending}
-              onChange={(e) => {
-                addFiles(e.target.files);
-                e.target.value = "";
-              }}
-              className="sr-only"
-            />
-          </label>
-          {files.length > 0 && (
-            <ul className="mt-2.5 space-y-1.5">
-              {files.map((f, i) => (
-                <li
-                  key={`${f.name}-${i}`}
-                  className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
-                >
-                  <span className="min-w-0 flex-1 truncate font-medium text-slate-800">
-                    {f.name}
-                  </span>
-                  <span className="text-slate-400">{formatBytes(f.size)}</span>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                    aria-label={`${f.name} dosyasını çıkar`}
-                    className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+          </p>
+        )}
+
+        {!repeating && (
+          <div>
+            <span className={fieldLabel}>Görseller ve dokümanlar</span>
+            <label className="mt-2 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 py-2.5 transition hover:border-teal-300 hover:bg-teal-50/50">
+              <Paperclip className="size-5 text-teal-600" />
+              <span className="text-sm text-slate-600">
+                Dosya ekle <span className="text-slate-400">· görsel veya PDF, en fazla 10 MB</span>
+              </span>
+              <input
+                type="file"
+                multiple
+                accept={ATTACHMENT_ACCEPT}
+                disabled={pending}
+                onChange={(e) => {
+                  addFiles(e.target.files);
+                  e.target.value = "";
+                }}
+                className="sr-only"
+              />
+            </label>
+            {files.length > 0 && (
+              <ul className="mt-2.5 space-y-1.5">
+                {files.map((f, i) => (
+                  <li
+                    key={`${f.name}-${i}`}
+                    className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
                   >
-                    <X className="size-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {fileErrors.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {fileErrors.map((err, i) => (
-                <li key={i} className="text-sm text-rose-600">
-                  {err}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                    <span className="min-w-0 flex-1 truncate font-medium text-slate-800">
+                      {f.name}
+                    </span>
+                    <span className="text-slate-400">{formatBytes(f.size)}</span>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={`${f.name} dosyasını çıkar`}
+                      className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {fileErrors.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {fileErrors.map((err, i) => (
+                  <li key={i} className="text-sm text-rose-600">
+                    {err}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {error && (
           <p
@@ -318,7 +404,7 @@ export function TaskFormDialog({
             className={`${primaryButton} h-9 px-4 text-sm`}
           >
             <SendHorizontal className="size-4.5" strokeWidth={2.4} />
-            {pending ? "Kaydediliyor…" : editing ? "Kaydet" : "İş ata"}
+            {pending ? "Kaydediliyor…" : editing ? "Kaydet" : repeating ? "Tekrarlayan iş oluştur" : "İş ata"}
           </button>
         </div>
       </form>

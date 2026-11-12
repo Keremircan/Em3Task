@@ -84,6 +84,30 @@ export function canRequestRevision(task: WorkflowTask, userId: string) {
 
 export const MAX_REVISION_NOTE = 5_000;
 
+// ---------------------------------------------------------------------
+// Ön görevler (görev bağımlılığı): ön görevleri tamamlanmadan görev başlatılamaz.
+// Aynı kural veritabanında da var (supabase/gorev-bagimliligi.sql).
+// ---------------------------------------------------------------------
+
+// Sorgularda görevle birlikte gelen ön görev durumu
+export type BlockerRef = { blocker: { status: TaskStatus } | null };
+
+// Görev sorgularına eklenen parça (ön görevlerin durumu)
+export const BLOCKERS_SELECT =
+  "blockers:task_dependencies!task_dependencies_task_id_fkey(blocker:tasks!task_dependencies_depends_on_id_fkey(status))" as const;
+
+// Henüz tamamlanmamış ön görev sayısı
+export function openBlockerCount(blockers: BlockerRef[] | null | undefined): number {
+  return (blockers ?? []).filter((b) => b.blocker !== null && b.blocker.status !== "done").length;
+}
+
+// Kilitli: kabul bekleyen görevin tamamlanmamış ön görevi var; kabul edilemez
+export function isLocked(task: { status: TaskStatus; blockers?: BlockerRef[] | null }): boolean {
+  return task.status === "pending" && openBlockerCount(task.blockers) > 0;
+}
+
+export const LOCKED_MESSAGE = "Bu görev, ön görevleri tamamlanmadan başlatılamaz.";
+
 // Sadece görevi atayan kişi, görev kabul edildikten sonra tamamlar
 export function canComplete(task: WorkflowTask, userId: string) {
   return (

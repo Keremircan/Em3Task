@@ -38,6 +38,18 @@ function read(key: string) {
   }
 }
 
+// Kullanıcı bu cihazda bildirimleri bilerek mi kapattı? (hatırlatma bandı ısrar etmesin)
+export function pushDisabledHere(): boolean {
+  return read(DISABLED_KEY) !== null;
+}
+
+// Aynı sayfada birden çok yerde kullanılır (hatırlatma bandı + Profil anahtarı):
+// birinde açılıp kapanınca diğeri de güncellensin
+const statusListeners = new Set<(status: PushStatus) => void>();
+function publish(status: PushStatus) {
+  statusListeners.forEach((listener) => listener(status));
+}
+
 // Takılan bir adım arayüzü kilitlemesin
 function withTimeout<T>(promise: Promise<T>, ms = 6000): Promise<T | undefined> {
   return Promise.race([promise, new Promise<undefined>((r) => setTimeout(() => r(undefined), ms))]);
@@ -93,6 +105,13 @@ export function usePushNotifications() {
   }, [notice]);
 
   useEffect(() => {
+    statusListeners.add(setStatus);
+    return () => {
+      statusListeners.delete(setStatus);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       const early = detect();
@@ -144,7 +163,7 @@ export function usePushNotifications() {
       }
       store(DISABLED_KEY, null);
       store(ENDPOINT_KEY, sub.endpoint);
-      setStatus("on");
+      publish("on");
       setNotice("Bu cihazda bildirimler açıldı. Birkaç saniye içinde deneme bildirimi gelecek.");
       await sendTestPush();
     } catch {
@@ -157,7 +176,7 @@ export function usePushNotifications() {
   // Kapatma anında ekrana yansır; sunucu kaydı ve tarayıcı aboneliği arkada temizlenir.
   const disable = useCallback(async () => {
     setError(null);
-    setStatus("off");
+    publish("off");
     setNotice("Bu cihazda bildirimler kapatıldı.");
     const result = await disablePushOnThisDevice();
     if (result.error) setError(result.error);

@@ -35,8 +35,57 @@ export type Task = {
   completed_at: string | null; // "Tamamlandı" yapıldığı an (veritabanı yazar)
   accepted_at: string | null;
   revision_count: number; // Kontrol → Yapılıyor (Revize Ver) sayısı
+  recurring_id: string | null; // tekrarlayan görevden açıldıysa onun kaydı
   created_at: string;
   updated_at: string;
+};
+
+// Tekrarlayan görev tanımı: her sabah zamanı gelenlerden yeni görev açılır.
+// supabase/tekrarlayan-gorevler.sql
+// daily: her gün · weekdays: hafta içi her gün · weekly: her hafta ·
+// biweekly: iki haftada bir · monthly: her ay (anchor_day: ayın kaçı)
+export type RecurringFrequency = "daily" | "weekdays" | "weekly" | "biweekly" | "monthly";
+
+export type RecurringTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  project_id: string;
+  assigned_to: string | null; // null = "Herkes"
+  created_by: string;
+  priority: TaskPriority;
+  frequency: RecurringFrequency;
+  anchor_day: number | null; // sadece "monthly": ayın günü (1-31; kısa ayda son gün)
+  due_after_days: number | null; // teslim tarihi: açıldıktan kaç gün sonra (null = yok)
+  next_run: string; // sıradaki açılış günü "YYYY-MM-DD"
+  last_run: string | null;
+  is_active: boolean; // false = duraklatıldı
+  created_at: string;
+};
+
+// Görev bağımlılığı: depends_on_id tamamlanmadan task_id başlatılamaz (kabul edilemez).
+// supabase/gorev-bagimliligi.sql
+export type TaskDependency = {
+  task_id: string;
+  depends_on_id: string;
+  added_by: string | null;
+  created_at: string;
+};
+
+// Hata kayıtları: sunucu yazar, sadece Admin okur. supabase/hata-kayitlari.sql
+export type ErrorLogRow = {
+  id: number;
+  created_at: string;
+  source: "server" | "client";
+  message: string;
+  digest: string | null;
+  path: string | null;
+  method: string | null;
+  route: string | null;
+  kind: string | null;
+  stack: string | null;
+  user_id: string | null;
+  user_agent: string | null;
 };
 
 export type Comment = {
@@ -308,7 +357,32 @@ export type Database = {
           Rel<"tasks_assigned_to_fkey", "assigned_to", "profiles">,
           Rel<"tasks_created_by_fkey", "created_by", "profiles">,
           Rel<"tasks_project_id_fkey", "project_id", "projects">,
+          Rel<"tasks_recurring_id_fkey", "recurring_id", "recurring_tasks">,
         ]
+      >;
+      recurring_tasks: Table<
+        RecurringTask,
+        Pick<RecurringTask, "title" | "project_id" | "frequency" | "next_run"> &
+          Partial<Omit<RecurringTask, "title" | "project_id" | "frequency" | "next_run">>,
+        [
+          Rel<"recurring_tasks_project_id_fkey", "project_id", "projects">,
+          Rel<"recurring_tasks_assigned_to_fkey", "assigned_to", "profiles">,
+          Rel<"recurring_tasks_created_by_fkey", "created_by", "profiles">,
+        ]
+      >;
+      task_dependencies: Table<
+        TaskDependency,
+        Pick<TaskDependency, "task_id" | "depends_on_id"> & Partial<Pick<TaskDependency, "added_by" | "created_at">>,
+        [
+          Rel<"task_dependencies_task_id_fkey", "task_id", "tasks">,
+          Rel<"task_dependencies_depends_on_id_fkey", "depends_on_id", "tasks">,
+          Rel<"task_dependencies_added_by_fkey", "added_by", "profiles">,
+        ]
+      >;
+      error_log: Table<
+        ErrorLogRow,
+        Pick<ErrorLogRow, "source" | "message"> & Partial<Omit<ErrorLogRow, "id" | "source" | "message">>,
+        [Rel<"error_log_user_id_fkey", "user_id", "profiles">]
       >;
       activity_log: Table<
         ActivityLog,

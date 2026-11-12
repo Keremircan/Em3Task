@@ -27,8 +27,11 @@ import {
   BOARD_COLUMNS,
   boardMove,
   canRequestRevision,
+  isLocked,
+  LOCKED_MESSAGE,
   STATUS_DOTS,
   STATUS_LABELS,
+  type BlockerRef,
   type BoardMove,
 } from "@/lib/tasks";
 import { todayKey } from "@/lib/days";
@@ -38,6 +41,7 @@ import { DueBadge } from "./due-badge";
 import { ChecklistBadge, LabelChips } from "./label-chip";
 import { checklistProgress, taskLabels, type LabelLite } from "@/lib/labels";
 import { RevisionBadge, RevisionDialog } from "./revision";
+import { LockBadge } from "./lock-badge";
 import { OptimisticTasksProvider, useOptimisticTasks, useShownTasks } from "./optimistic-tasks";
 import { BoardFilters, EMPTY_FILTERS, matchesFilters, type Filters } from "./board-filters";
 import { safe } from "@/lib/safe-action";
@@ -50,6 +54,7 @@ export type BoardTask = {
   due_date: string | null;
   labels?: { label: LabelLite | null }[];
   checklist?: { is_done: boolean }[];
+  blockers?: BlockerRef[]; // ön görevler (tamamlanmamışsa görev kilitli)
   revision_count: number;
   created_at: string;
   assigned_to: string | null;
@@ -122,6 +127,12 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
   );
   const active = all.find((t) => t.id === activeId) ?? null;
 
+  // Kilitli görev (ön görevleri bitmemiş) kabul edilemez: o sütun bırakma hedefi olmaz
+  const allowedMove = (task: BoardTask, to: TaskStatus): BoardMove | null => {
+    const move = boardMove(task, to, userId);
+    return move === "accept" && isLocked(task) ? null : move;
+  };
+
   function run(task: BoardTask, move: BoardMove) {
     if (move === "revision") {
       setRevisionFor(task);
@@ -174,8 +185,12 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
     const task = all.find((t) => t.id === e.active.id);
     const to = e.over?.id as TaskStatus | undefined;
     if (!task || !to || task.status === to) return;
-    const move = boardMove(task, to, userId);
+    const move = allowedMove(task, to);
     if (!move) {
+      if (boardMove(task, to, userId) === "accept") {
+        optimistic?.report(LOCKED_MESSAGE);
+        return;
+      }
       optimistic?.report(
         `“${STATUS_LABELS[to]}” sütununa taşıma yetkiniz yok. ${moveRuleHint(task.status, to)}`,
       );
@@ -207,7 +222,7 @@ function Board({ tasks, userId, newTask }: { tasks: BoardTask[]; userId: string;
           <div className="grid min-h-[60vh] min-w-[920px] flex-1 grid-cols-4 gap-3 xl:min-w-0">
             {BOARD_COLUMNS.map((column) => {
               const items = shown.filter((t) => t.status === column.status);
-              const move = active ? boardMove(active, column.status, userId) : null;
+              const move = active ? allowedMove(active, column.status) : null;
               return (
                 <Column
                   key={column.status}
@@ -409,6 +424,7 @@ function DraggableCard({
           <span className="flex shrink-0 flex-col items-end gap-1" onPointerDown={(e) => e.stopPropagation()}>
             <PriorityControl taskId={task.id} priority={task.priority} size="xs" />
             <DueBadge due={task.due_date} status={task.status} size="xs" />
+            <LockBadge status={task.status} blockers={task.blockers} size="xs" />
             <RevisionBadge count={task.revision_count} size="xs" />
           </span>
         </div>

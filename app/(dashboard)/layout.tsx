@@ -16,6 +16,7 @@ import { SidebarSearch } from "./_components/sidebar-search";
 import { getNotifications } from "@/lib/notifications";
 import { getNavCounts } from "@/lib/nav-counts";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { PushReminder } from "@/components/pwa/push-reminder";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
@@ -69,6 +70,8 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 
       {/* Mobilde üstte sabit çubuk, altta sekme çubuğu var: içerik ikisinin arasında kalır */}
       <main id="icerik" tabIndex={-1} className="flex min-w-0 flex-1 flex-col px-4 outline-none pt-[calc(4.25rem+env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pt-6 lg:pb-5">
+        {/* Bu cihazda bildirim açık değilse hatırlatır (açıksa hiçbir şey çizmez) */}
+        <PushReminder />
         {/* flex: sayfalar (ör. proje panosu) kalan yüksekliği doldurabilir */}
         <div className="flex flex-1 flex-col">{children}</div>
         <footer className="mt-8 hidden text-xs text-slate-400 lg:block">
@@ -124,7 +127,7 @@ async function SidebarUser() {
 
 async function SidebarData() {
   const [user, projects, counts] = await Promise.all([getCurrentUser(), getProjects(), getNavCounts()]);
-  const props = { projects, userId: user.id, counts };
+  const props = { projects, userId: user.id, counts, isAdmin: user.isAdmin };
   return (
     // Aktif sayfa (usePathname) istek anında bilinir; o gelene kadar vurgusuz liste
     <Suspense fallback={<SidebarNavList {...props} pathname={null} />}>

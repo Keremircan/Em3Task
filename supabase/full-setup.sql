@@ -2062,3 +2062,348 @@ create table if not exists public.subscription_reminders (
 alter table public.subscription_reminders enable row level security;
 revoke all on public.subscription_reminders from anon, authenticated;
 -- Politika yok: sadece service role (sunucu) erişir.
+
+
+-- ---------------------------------------------------------------------
+-- GÜVENLİK SIKILAŞTIRMASI (guvenlik.sql)
+-- ---------------------------------------------------------------------
+-- =====================================================================
+-- Em3Task — Güvenlik sıkılaştırması
+--   Supabase güvenlik denetiminin (Advisors → Security) uyarısı:
+--   handle_new_user() yeni üye açılınca profil satırını oluşturan bir
+--   tetikleyici fonksiyonudur; ama API üzerinden (rpc/handle_new_user)
+--   girişsiz kullanıcıya bile "çalıştırılabilir" görünüyordu. Tetikleyici
+--   dışında çağrılamaz, yine de yetkiyi kaldırıyoruz.
+--
+--   Bilerek açık bırakılanlar (uygulama ve erişim kuralları kullanıyor):
+--     is_admin()               → giriş yapmış üyeler
+--     can_edit_checklist(uuid) → giriş yapmış üyeler
+--
+-- Supabase SQL Editor'de çalıştırın. Tekrar çalıştırılabilir.
+-- =====================================================================
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
+-- Kontrol: anon ve authenticated satırda görünmemeli
+select proname, coalesce(proacl::text, '(varsayılan: herkese açık)') as yetkiler
+from pg_proc
+where pronamespace = 'public'::regnamespace and proname = 'handle_new_user';
+
+
+-- ---------------------------------------------------------------------
+-- HATA KAYITLARI (hata-kayitlari.sql)
+-- ---------------------------------------------------------------------
+-- =====================================================================
+-- Em3Task — Hata kayıtları
+--   Sunucuda ve tarayıcıda oluşan beklenmedik hatalar burada tutulur;
+--   Admin "Hata kayıtları" sayfasından görür ve temizler.
+--   Yazan: sadece sunucu (service role). Okuyan/silen: sadece Admin.
+--   30 günden eski kayıtlar ve en yeni 1000 kaydın dışındakiler her yeni
+--   kayıtta kendiliğinden silinir (tablo büyümez).
+--
+-- revize.sql'den (is_admin) SONRA, Supabase SQL Editor'de çalıştırın.
+-- Tekrar çalıştırılabilir.
+-- =====================================================================
+
+create table if not exists public.error_log (
+  id          bigint generated always as identity primary key,
+  created_at  timestamptz not null default now(),
+  source      text not null check (source in ('server', 'client')),
+  message     text not null,
+  digest      text,
+  path        text,   -- adres (sorgu kısmı olmadan)
+  method      text,
+  route       text,   -- hatanın çıktığı sayfa dosyası
+  kind        text,   -- render | route | action | proxy
+  stack       text,
+  user_id     uuid references public.profiles (id) on delete set null,
+  user_agent  text
+);
+
+create index if not exists error_log_created_idx on public.error_log (created_at desc);
+create index if not exists error_log_user_id_idx on public.error_log (user_id);
+
+alter table public.error_log enable row level security;
+revoke all on public.error_log from anon, authenticated;
+grant select, delete on public.error_log to authenticated;
+
+drop policy if exists "Error log read admin"   on public.error_log;
+drop policy if exists "Error log delete admin" on public.error_log;
+
+create policy "Error log read admin" on public.error_log
+  for select to authenticated using ((select public.is_admin()));
+create policy "Error log delete admin" on public.error_log
+  for delete to authenticated using ((select public.is_admin()));
+-- Ekleme politikası yok: kayıtları sadece sunucu (service role) yazar.
+
+-- Eski kayıtları temizle
+create or replace function public.trim_error_log()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.error_log where created_at < now() - interval '30 days';
+  delete from public.error_log
+  where id not in (
+    select id from public.error_log
+    order by created_at desc, id desc
+    limit 1000
+  );
+  return null;
+end;
+$$;
+
+revoke execute on function public.trim_error_log() from public, anon, authenticated;
+
+-- Satır başına değil, ekleme işlemi başına bir kez çalışır
+drop trigger if exists error_log_trim on public.error_log;
+create trigger error_log_trim
+  after insert on public.error_log
+  for each statement execute function public.trim_error_log();
+
+-- Kontrol
+select count(*) as kayit_sayisi from public.error_log;
+
+
+-- ---------------------------------------------------------------------
+-- TEKRARLAYAN GÖREVLER (tekrarlayan-gorevler.sql)
+-- ---------------------------------------------------------------------
+-- =====================================================================
+-- Em3Task — Tekrarlayan görevler
+--   Her gün / hafta içi / her hafta / iki haftada bir / her ay kendiliğinden
+--   açılan görevler. Tanım recurring_tasks tablosunda durur; her sabah
+--   09:00'da çalışan zamanlanmış iş (hatirlatma.sql, aynı pg_cron işi)
+--   next_run günü gelenlerden yeni görev açar ve sıradaki günü ileri alır.
+--   Açılan görev tasks.recurring_id ile tanımına bağlanır.
+--
+--   Herkes okur; ekleyen kişi ya da Admin duraklatır / siler.
+--   Proje silinirse o projenin tekrarları da silinir. Sorumlu ya da kuran
+--   üye ekipten çıkarılırsa tekrar da silinir (sahipsiz görev açılmaz).
+--
+-- revize.sql'den SONRA, Supabase SQL Editor'de çalıştırın.
+-- Zamanlanmış işte değişiklik gerekmez. Tekrar çalıştırılabilir.
+-- =====================================================================
+
+create table if not exists public.recurring_tasks (
+  id              uuid primary key default gen_random_uuid(),
+  title           text not null check (char_length(trim(title)) between 1 and 200),
+  description     text,
+  project_id      uuid not null references public.projects (id) on delete cascade,
+  assigned_to     uuid references public.profiles (id) on delete cascade, -- null = "Herkes"
+  created_by      uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  priority        text not null default 'none'
+                  check (priority in ('none', 'low', 'medium', 'high', 'urgent')),
+  frequency       text not null
+                  check (frequency in ('daily', 'weekdays', 'weekly', 'biweekly', 'monthly')),
+  anchor_day      smallint check (anchor_day between 1 and 31),         -- aylıkta ayın günü
+  due_after_days  smallint check (due_after_days between 0 and 60),     -- null = teslim tarihi yok
+  next_run        date not null,                                        -- sıradaki açılış günü
+  last_run        date,
+  is_active       boolean not null default true,                        -- false = duraklatıldı
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists recurring_tasks_due_idx on public.recurring_tasks (next_run) where is_active;
+create index if not exists recurring_tasks_created_by_idx  on public.recurring_tasks (created_by);
+create index if not exists recurring_tasks_project_id_idx  on public.recurring_tasks (project_id);
+create index if not exists recurring_tasks_assigned_to_idx on public.recurring_tasks (assigned_to);
+
+-- Açılan görevin hangi tekrardan geldiği (tekrar silinirse görev kalır, bağ kopar)
+alter table public.tasks
+  add column if not exists recurring_id uuid references public.recurring_tasks (id) on delete set null;
+create index if not exists tasks_recurring_id_idx on public.tasks (recurring_id);
+
+alter table public.recurring_tasks enable row level security;
+revoke all on public.recurring_tasks from anon;
+grant select, insert, update, delete on public.recurring_tasks to authenticated;
+
+drop policy if exists "Recurring read"   on public.recurring_tasks;
+drop policy if exists "Recurring insert" on public.recurring_tasks;
+drop policy if exists "Recurring update" on public.recurring_tasks;
+drop policy if exists "Recurring delete" on public.recurring_tasks;
+
+create policy "Recurring read" on public.recurring_tasks
+  for select to authenticated using (true);
+create policy "Recurring insert" on public.recurring_tasks
+  for insert to authenticated with check (created_by = (select auth.uid()));
+create policy "Recurring update" on public.recurring_tasks
+  for update to authenticated
+  using (created_by = (select auth.uid()) or (select public.is_admin()))
+  with check (created_by = (select auth.uid()) or (select public.is_admin()));
+create policy "Recurring delete" on public.recurring_tasks
+  for delete to authenticated
+  using (created_by = (select auth.uid()) or (select public.is_admin()));
+
+-- Kuran kişi sonradan değiştirilemez (Admin de başkasının adına devredemez)
+create or replace function public.recurring_keep_owner()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.created_by is distinct from old.created_by then
+    raise exception 'Tekrarlayan görevi kuran kişi değiştirilemez.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists recurring_tasks_keep_owner on public.recurring_tasks;
+create trigger recurring_tasks_keep_owner
+  before update on public.recurring_tasks
+  for each row execute function public.recurring_keep_owner();
+
+-- Kontrol
+select count(*) as tekrar_sayisi from public.recurring_tasks;
+
+
+-- ---------------------------------------------------------------------
+-- GÖREV BAĞIMLILIĞI (gorev-bagimliligi.sql)
+-- ---------------------------------------------------------------------
+-- =====================================================================
+-- Em3Task — Görev bağımlılığı ("ön görev")
+--   task_dependencies: depends_on_id tamamlanmadan task_id başlatılamaz
+--   (Kabul bekliyor → Yapılıyor geçişi engellenir). Kural hem burada hem
+--   arayüzde uygulanır; arayüzü atlayan istekler de engellenir.
+--
+--   Herkes okur. Ön görevi, bağlanan görevi atayan kişi ya da Admin ekler /
+--   kaldırır. Döngü (A → B → A) ve kendine bağlama engellenir; bir göreve en
+--   fazla 20 ön görev bağlanır. Görevlerden biri silinirse bağ da silinir.
+--
+-- revize.sql'den SONRA, Supabase SQL Editor'de çalıştırın.
+-- Tekrar çalıştırılabilir.
+-- =====================================================================
+
+create table if not exists public.task_dependencies (
+  task_id        uuid not null references public.tasks (id) on delete cascade,    -- bekleyen görev
+  depends_on_id  uuid not null references public.tasks (id) on delete cascade,    -- ön görev
+  added_by       uuid default auth.uid() references public.profiles (id) on delete set null,
+  created_at     timestamptz not null default now(),
+  primary key (task_id, depends_on_id),
+  constraint task_dependencies_not_self check (task_id <> depends_on_id)
+);
+
+create index if not exists task_dependencies_depends_on_idx on public.task_dependencies (depends_on_id);
+create index if not exists task_dependencies_added_by_idx   on public.task_dependencies (added_by);
+
+-- Ön görevleri kim düzenler: bekleyen görevi atayan kişi ya da Admin.
+-- (Görevleri herkes okuyabildiği için çağıranın yetkisiyle çalışması yeterli.)
+create or replace function public.can_edit_dependencies(p_task_id uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.tasks t
+    where t.id = p_task_id and t.created_by = (select auth.uid())
+  ) or public.is_admin();
+$$;
+
+revoke execute on function public.can_edit_dependencies(uuid) from public, anon;
+grant execute on function public.can_edit_dependencies(uuid) to authenticated;
+
+alter table public.task_dependencies enable row level security;
+revoke all on public.task_dependencies from anon;
+grant select, insert, delete on public.task_dependencies to authenticated;
+
+drop policy if exists "Dependencies read"   on public.task_dependencies;
+drop policy if exists "Dependencies insert" on public.task_dependencies;
+drop policy if exists "Dependencies delete" on public.task_dependencies;
+
+create policy "Dependencies read" on public.task_dependencies
+  for select to authenticated using (true);
+create policy "Dependencies insert" on public.task_dependencies
+  for insert to authenticated
+  with check (added_by = (select auth.uid()) and public.can_edit_dependencies(task_id));
+create policy "Dependencies delete" on public.task_dependencies
+  for delete to authenticated using (public.can_edit_dependencies(task_id));
+
+-- Ekleme kuralları: tamamlanan göreve eklenmez, sayı sınırı, döngü olmaz
+create or replace function public.task_dependencies_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.tasks t where t.id = new.task_id and t.status = 'done') then
+    raise exception 'Tamamlanan göreve ön görev eklenemez.' using errcode = '42501';
+  end if;
+
+  if (select count(*) from public.task_dependencies d where d.task_id = new.task_id) >= 20 then
+    raise exception 'Bir göreve en fazla 20 ön görev bağlanabilir.' using errcode = '42501';
+  end if;
+
+  -- Seçilen ön görev (doğrudan ya da dolaylı) zaten bu görevi bekliyorsa döngü olur
+  if exists (
+    with recursive chain (id) as (
+      select d.depends_on_id from public.task_dependencies d where d.task_id = new.depends_on_id
+      union
+      select d.depends_on_id
+      from public.task_dependencies d
+      join chain c on d.task_id = c.id
+    )
+    select 1 from chain where id = new.task_id
+  ) then
+    raise exception 'Bu bağlantı döngü oluşturur: seçilen görev zaten bu görevin bitmesini bekliyor.'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function public.task_dependencies_guard() from public, anon, authenticated;
+
+drop trigger if exists task_dependencies_guard on public.task_dependencies;
+create trigger task_dependencies_guard
+  before insert on public.task_dependencies
+  for each row execute function public.task_dependencies_guard();
+
+-- Başlatma kuralı: tamamlanmamış ön görevi olan görev kabul edilemez
+create or replace function public.enforce_task_dependencies()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if (select auth.uid()) is null then
+    return new; -- sunucu / SQL Editor işlemleri
+  end if;
+
+  if old.status = 'pending' and new.status = 'in_progress' and exists (
+    select 1
+    from public.task_dependencies d
+    join public.tasks b on b.id = d.depends_on_id
+    where d.task_id = new.id and b.status <> 'done'
+  ) then
+    raise exception 'Bu görev, ön görevleri tamamlanmadan başlatılamaz.' using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function public.enforce_task_dependencies() from public, anon, authenticated;
+
+drop trigger if exists tasks_enforce_dependencies on public.tasks;
+create trigger tasks_enforce_dependencies
+  before update of status on public.tasks
+  for each row execute function public.enforce_task_dependencies();
+
+-- Canlı güncelleme: ön görev eklenince / kaldırılınca kilit rozeti anında değişsin
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'task_dependencies'
+  ) then
+    alter publication supabase_realtime add table public.task_dependencies;
+  end if;
+end;
+$$;
+
+-- Kontrol
+select count(*) as bag_sayisi from public.task_dependencies;

@@ -5,9 +5,12 @@ import { sendPushNow } from "@/lib/push";
 import { todayKey } from "@/lib/days";
 import { addDays, shortDay } from "@/lib/due";
 import { sendSubscriptionReminders } from "@/lib/subscription-reminders";
+import { openRecurringTasks } from "@/lib/recurring-run";
 
-// Teslim tarihi hatırlatmaları. Supabase (pg_cron) her sabah bu adresi çağırır
+// Sabah işleri. Supabase (pg_cron) her sabah bu adresi çağırır
 // (bkz. supabase/hatirlatma.sql). Oturum yoktur; istek CRON_SECRET ile korunur.
+// Önce zamanı gelen tekrarlayan görevler açılır (bkz. lib/recurring-run), sonra
+// teslim tarihi hatırlatmaları gönderilir:
 //   yarın teslim  → sorumluya
 //   bugün teslim  → sorumluya
 //   gecikti       → sorumluya ve atayana
@@ -44,17 +47,29 @@ export async function POST(request: NextRequest) {
     error: "Abonelik hatırlatmaları gönderilemedi.",
   }));
 
+  // Tekrarlayan görevler: bugün açılması gerekenler. Açılan görev için "yeni görev"
+  // bildirimi zaten gider; aynı çağrıda bir de teslim hatırlatması gönderilmez.
+  const opened = await openRecurringTasks(admin, today).catch(() => null);
+  const openedIds = new Set(opened?.taskIds ?? []);
+  const recurring = opened
+    ? { checked: opened.checked, opened: opened.opened }
+    : { error: "Tekrarlayan görevler açılamadı." };
+
   const { data: tasks, error } = await admin
     .from("tasks")
     .select("id, title, due_date, assigned_to, created_by")
     .neq("status", "done")
     .not("due_date", "is", null)
     .lte("due_date", tomorrow);
-  if (error) return NextResponse.json({ error: "Görevler okunamadı.", subscriptions }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: "Görevler okunamadı.", subscriptions, recurring }, { status: 500 });
+  }
 
   const kindOf = (due: string): Kind => (due === tomorrow ? "tomorrow" : due === today ? "today" : "overdue");
-  const candidates = (tasks ?? []).map((t) => ({ ...t, kind: kindOf(t.due_date!) }));
-  if (!candidates.length) return NextResponse.json({ checked: 0, sent: 0, subscriptions });
+  const candidates = (tasks ?? [])
+    .filter((t) => !openedIds.has(t.id))
+    .map((t) => ({ ...t, kind: kindOf(t.due_date!) }));
+  if (!candidates.length) return NextResponse.json({ checked: 0, sent: 0, subscriptions, recurring });
 
   const { data: sentRows } = await admin
     .from("task_reminders")
@@ -96,5 +111,5 @@ export async function POST(request: NextRequest) {
     sent++;
   }
 
-  return NextResponse.json({ checked: candidates.length, sent, subscriptions });
+  return NextResponse.json({ checked: candidates.length, sent, subscriptions, recurring });
 }
