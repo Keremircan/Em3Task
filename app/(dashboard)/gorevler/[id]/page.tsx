@@ -110,7 +110,7 @@ async function TaskDetail({
          project:projects!tasks_project_id_fkey(id, name),
          assignee:profiles!tasks_assigned_to_fkey(full_name),
          creator:profiles!tasks_created_by_fkey(full_name),
-         recurring:recurring_tasks!tasks_recurring_id_fkey(frequency, next_run, anchor_day, is_active),
+         recurring:recurring_tasks!tasks_recurring_id_fkey(frequency, next_run, anchor_day, run_hour, is_active),
          blockers:task_dependencies!task_dependencies_task_id_fkey(blocker:tasks!task_dependencies_depends_on_id_fkey(id, title, status)),
          dependents:task_dependencies!task_dependencies_depends_on_id_fkey(dependent:tasks!task_dependencies_task_id_fkey(id, title, status))`,
       )
@@ -203,9 +203,14 @@ async function TaskDetail({
     .map((c) => ({ id: c.id, title: c.title, project: c.project?.name ?? null }));
   const canEditDependencies = task.created_by === user.id || user.isAdmin;
   const locked = isLocked(task);
-  // Tekrarlayan görevden açıldıysa sıklığı: "Her salı", "Her ayın 15’i"…
+  // Tekrarlayan görevden açıldıysa sıklığı ve saati: "Her salı · 17:00", "Her ayın 15’i · 09:00"…
   const schedule = task.recurring
-    ? describeSchedule(task.recurring.frequency, task.recurring.next_run, task.recurring.anchor_day)
+    ? describeSchedule(
+        task.recurring.frequency,
+        task.recurring.next_run,
+        task.recurring.anchor_day,
+        task.recurring.run_hour,
+      )
     : null;
 
   const creatorName = task.creator?.full_name ?? "Eski üye";

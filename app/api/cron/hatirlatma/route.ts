@@ -1,15 +1,16 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { cronAuthorized } from "@/lib/cron-auth";
 import { sendPushNow } from "@/lib/push";
 import { todayKey } from "@/lib/days";
 import { addDays, shortDay } from "@/lib/due";
 import { sendSubscriptionReminders } from "@/lib/subscription-reminders";
-import { openRecurringTasks } from "@/lib/recurring-run";
+import { currentSlot, openRecurringTasks } from "@/lib/recurring-run";
 
 // Sabah işleri. Supabase (pg_cron) her sabah bu adresi çağırır
 // (bkz. supabase/hatirlatma.sql). Oturum yoktur; istek CRON_SECRET ile korunur.
-// Önce zamanı gelen tekrarlayan görevler açılır (bkz. lib/recurring-run), sonra
+// Önce saati gelmiş tekrarlayan görevler açılır (asıl işi saat başı çalışan
+// api/cron/tekrar yapar; buradaki çağrı yedektir, bkz. lib/recurring-run), sonra
 // teslim tarihi hatırlatmaları gönderilir:
 //   yarın teslim  → sorumluya
 //   bugün teslim  → sorumluya
@@ -21,18 +22,11 @@ import { openRecurringTasks } from "@/lib/recurring-run";
 
 type Kind = "tomorrow" | "today" | "overdue";
 
-function authorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || secret.length < 32) return false;
-  const given = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
+// Tekrarlayan görev az önce açıldıysa "yeni görev" bildirimi zaten gitmiştir
+const JUST_OPENED_MS = 15 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
-  if (!authorized(request)) {
+  if (!cronAuthorized(request)) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
   }
   const admin = createAdminClient();
@@ -47,9 +41,10 @@ export async function POST(request: NextRequest) {
     error: "Abonelik hatırlatmaları gönderilemedi.",
   }));
 
-  // Tekrarlayan görevler: bugün açılması gerekenler. Açılan görev için "yeni görev"
-  // bildirimi zaten gider; aynı çağrıda bir de teslim hatırlatması gönderilmez.
-  const opened = await openRecurringTasks(admin, today).catch(() => null);
+  // Tekrarlayan görevler: bu saate kadar açılması gerekenler. Açılan görev için "yeni
+  // görev" bildirimi zaten gider; aynı çağrıda bir de teslim hatırlatması gönderilmez.
+  const slot = currentSlot();
+  const opened = await openRecurringTasks(admin, slot.day, slot.hour).catch(() => null);
   const openedIds = new Set(opened?.taskIds ?? []);
   const recurring = opened
     ? { checked: opened.checked, opened: opened.opened }
@@ -57,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   const { data: tasks, error } = await admin
     .from("tasks")
-    .select("id, title, due_date, assigned_to, created_by")
+    .select("id, title, due_date, assigned_to, created_by, recurring_id, created_at")
     .neq("status", "done")
     .not("due_date", "is", null)
     .lte("due_date", tomorrow);
@@ -66,8 +61,11 @@ export async function POST(request: NextRequest) {
   }
 
   const kindOf = (due: string): Kind => (due === tomorrow ? "tomorrow" : due === today ? "today" : "overdue");
+  // Saat başı işi aynı dakikada açmış olabilir: az önce açılan tekrarlayan görev de atlanır
+  const justOpened = (t: { recurring_id: string | null; created_at: string }) =>
+    t.recurring_id !== null && Date.now() - new Date(t.created_at).getTime() < JUST_OPENED_MS;
   const candidates = (tasks ?? [])
-    .filter((t) => !openedIds.has(t.id))
+    .filter((t) => !openedIds.has(t.id) && !justOpened(t))
     .map((t) => ({ ...t, kind: kindOf(t.due_date!) }));
   if (!candidates.length) return NextResponse.json({ checked: 0, sent: 0, subscriptions, recurring });
 

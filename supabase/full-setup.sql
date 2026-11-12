@@ -2407,3 +2407,15 @@ $$;
 
 -- Kontrol
 select count(*) as bag_sayisi from public.task_dependencies;
+
+
+-- =====================================================================
+-- TEKRARLAYAN GÖREVLERDE AÇILIŞ SAATİ (tekrar-saati.sql; zamanlama kısmı o dosyada)
+--   recurring_tasks.run_hour: görevin açılacağı saat (Türkiye saati, 0-23;
+--   varsayılan 9). Saat başı çalışan zamanlanmış iş (em3task-tekrarlayan-gorevler)
+--   o saate kadar zamanı gelen tekrarları açar.
+-- =====================================================================
+
+alter table public.recurring_tasks
+  add column if not exists run_hour smallint not null default 9
+  check (run_hour between 0 and 23);

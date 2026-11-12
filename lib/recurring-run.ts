@@ -3,12 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, RecurringTask } from "@/types/database";
 import { clip, sendPushNow } from "@/lib/push";
 import { addDays } from "@/lib/due";
+import { dayAndHour } from "@/lib/days";
 import { nextOccurrenceAfter } from "@/lib/recurring";
 
-// Zamanı gelen tekrarlayan görevlerden yeni görev açar. Her sabah zamanlanmış iş
-// çağırır (app/api/cron/hatirlatma). Oturum yoktur; service role ile çalışır.
+// Zamanı gelen tekrarlayan görevlerden yeni görev açar. Saat başı zamanlanmış iş
+// çağırır (app/api/cron/tekrar); sabah hatırlatma işi de yedek olarak çağırır
+// (app/api/cron/hatirlatma). Oturum yoktur; service role ile çalışır.
 //
-// Aynı gün iki kez çağrılsa da görev bir kez açılır: önce sıradaki açılış günü
+// Aynı saatte iki kez çağrılsa da görev bir kez açılır: önce sıradaki açılış günü
 // ileri alınır ("sahiplenme"), ancak bunu başaran çağrı görevi açar.
 
 type Admin = SupabaseClient<Database>;
@@ -19,12 +21,23 @@ export type RecurringRunResult = {
   taskIds: string[]; // bu çağrıda açılan görevler (aynı çağrıda teslim hatırlatması gitmesin)
 };
 
-export async function openRecurringTasks(admin: Admin, today: string): Promise<RecurringRunResult> {
+// Zamanlanmış çağrı saat başından birkaç saniye önce gelirse de o saat sayılsın
+const SLOT_TOLERANCE_MS = 5 * 60 * 1000;
+
+// Çağrının ait olduğu gün ve saat (Türkiye saati)
+export function currentSlot(now: Date = new Date()): { day: string; hour: number } {
+  return dayAndHour(new Date(now.getTime() + SLOT_TOLERANCE_MS));
+}
+
+// today / hour: açılış günü bugün ya da önce olan ve saati gelmiş tekrarlar açılır
+// (bkz. isDueNow). Kaçan günler için ayrı ayrı görev açılmaz.
+export async function openRecurringTasks(admin: Admin, today: string, hour: number): Promise<RecurringRunResult> {
   const { data: due, error } = await admin
     .from("recurring_tasks")
     .select("*")
     .eq("is_active", true)
     .lte("next_run", today)
+    .lte("run_hour", hour)
     .order("created_at", { ascending: true });
   if (error) throw new Error("Tekrarlayan görevler okunamadı.");
 

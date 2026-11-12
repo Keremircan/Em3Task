@@ -35,7 +35,7 @@ async function AssignedByMe() {
     supabase
       .from("recurring_tasks")
       .select(
-        "id, title, frequency, anchor_day, due_after_days, next_run, is_active, assigned_to, project:projects!recurring_tasks_project_id_fkey(id, name), assignee:profiles!recurring_tasks_assigned_to_fkey(full_name)",
+        "id, title, frequency, anchor_day, due_after_days, next_run, run_hour, is_active, assigned_to, project:projects!recurring_tasks_project_id_fkey(id, name), assignee:profiles!recurring_tasks_assigned_to_fkey(full_name)",
       )
       .eq("created_by", userId)
       .order("created_at", { ascending: false }),

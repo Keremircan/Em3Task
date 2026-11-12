@@ -184,6 +184,8 @@ Uygulamanın adresi değiştiğinde (ya da sıfırdan kurulumda) sırayla:
    ```
 
    Repodaki `supabase/hatirlatma.sql` dosyasındaki adres de aynı şekilde güncellenir.
+   Saat başı çalışan ikinci iş (`em3task-tekrarlayan-gorevler`, `supabase/tekrar-saati.sql`,
+   adres `/api/cron/tekrar`) için de aynısı yapılır.
 
 3. **Eski bildirim abonelikleri.** Telefon bildirimleri adrese bağlıdır; eski adresteki
    abonelikler yeni siteden yönetilemez ve tıklanınca eski adresi açar. Supabase SQL Editor'da:

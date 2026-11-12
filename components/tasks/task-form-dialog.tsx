@@ -14,12 +14,15 @@ import {
 import { EVERYONE } from "@/lib/tasks";
 import { todayKey } from "@/lib/days";
 import {
+  DEFAULT_RUN_HOUR,
   describeSchedule,
   DUE_AFTER_OPTIONS,
   firstOccurrence,
   FREQUENCIES,
   FREQUENCY_LABELS,
+  hourLabel,
   isFrequency,
+  RUN_HOURS,
 } from "@/lib/recurring";
 import type { TaskPriority } from "@/types/database";
 import { PrioritySelect } from "./priority-select";
@@ -64,12 +67,14 @@ export function TaskFormDialog({
   // Tekrar sıklığı ("" = tekrarlanmaz). Sadece yeni görevde seçilebilir.
   const [repeat, setRepeat] = useState("");
   const [repeatStart, setRepeatStart] = useState(todayKey);
+  const [repeatHour, setRepeatHour] = useState(DEFAULT_RUN_HOUR);
   const editing = Boolean(task);
   const repeating = !editing && repeat !== "";
-  // Seçimin özeti ("Her salı", "Her ayın 15’i"): gün, ilk açılış tarihinden okunur
+  // Seçimin özeti ("Her salı · 17:00", "Her ayın 15’i · 09:00"): gün, ilk açılış
+  // tarihinden okunur
   const repeatSummary =
     repeating && isFrequency(repeat) && /^\d{4}-\d{2}-\d{2}$/.test(repeatStart)
-      ? describeSchedule(repeat, firstOccurrence(repeatStart, repeat), null)
+      ? describeSchedule(repeat, firstOccurrence(repeatStart, repeat), null, repeatHour)
       : null;
 
   function close() {
@@ -329,6 +334,26 @@ export function TaskFormDialog({
               />
             </div>
           )}
+          {repeating && (
+            <div>
+              <label htmlFor="task-repeat-hour" className={fieldLabel}>
+                Açılış saati
+              </label>
+              <SelectField
+                id="task-repeat-hour"
+                name="repeat_hour"
+                value={repeatHour}
+                onChange={(e) => setRepeatHour(Number(e.target.value))}
+                disabled={pending}
+              >
+                {RUN_HOURS.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hourLabel(hour)}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          )}
         </div>
 
         {repeating && (
@@ -336,9 +361,10 @@ export function TaskFormDialog({
             <Repeat className="mt-0.5 size-4 shrink-0 text-teal-700" />
             <span>
               {repeatSummary && <strong className="font-bold">{repeatSummary}. </strong>}
-              Görev sabah 09:00’da kendiliğinden açılır; ilk açılış bugünse ilki şimdi açılır.
-              Haftalık ve aylık tekrarda gün, ilk açılış tarihine göre belirlenir. Tekrarı
-              “Atadığım görevler” sayfasından duraklatabilir ya da silebilirsiniz.
+              Görev seçtiğiniz saatte kendiliğinden açılır; ilk açılış bugünse ve o saat geçtiyse
+              ilki şimdi açılır. Haftalık ve aylık tekrarda gün, ilk açılış tarihine göre
+              belirlenir. Tekrarı “Atadığım görevler” sayfasından duraklatabilir ya da
+              silebilirsiniz.
             </span>
           </p>
         )}

@@ -40,7 +40,7 @@ export type Task = {
   updated_at: string;
 };
 
-// Tekrarlayan görev tanımı: her sabah zamanı gelenlerden yeni görev açılır.
+// Tekrarlayan görev tanımı: günü ve saati gelenlerden yeni görev açılır (saat başı).
 // supabase/tekrarlayan-gorevler.sql
 // daily: her gün · weekdays: hafta içi her gün · weekly: her hafta ·
 // biweekly: iki haftada bir · monthly: her ay (anchor_day: ayın kaçı)
@@ -58,6 +58,7 @@ export type RecurringTask = {
   anchor_day: number | null; // sadece "monthly": ayın günü (1-31; kısa ayda son gün)
   due_after_days: number | null; // teslim tarihi: açıldıktan kaç gün sonra (null = yok)
   next_run: string; // sıradaki açılış günü "YYYY-MM-DD"
+  run_hour: number; // açılış saati (Türkiye saati, 0-23). supabase/tekrar-saati.sql
   last_run: string | null;
   is_active: boolean; // false = duraklatıldı
   created_at: string;

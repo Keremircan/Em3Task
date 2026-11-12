@@ -6,12 +6,15 @@ import { getCurrentUser, getUserId } from "@/lib/auth";
 import { clip, notifyUsers } from "@/lib/push";
 import { isUuid } from "@/lib/tasks";
 import { readTaskForm } from "@/lib/task-form";
-import { todayKey } from "@/lib/days";
+import { dayAndHour, todayKey } from "@/lib/days";
 import { addDays, daysBetween, isDayString } from "@/lib/due";
 import {
   dayOfMonth,
+  DEFAULT_RUN_HOUR,
   firstOccurrence,
+  isDueNow,
   isFrequency,
+  isRunHour,
   MAX_DUE_AFTER_DAYS,
   MAX_START_AHEAD_DAYS,
   nextOccurrenceAfter,
@@ -28,8 +31,8 @@ function revalidateAll() {
 }
 
 // Görev formundaki "Tekrar" seçiliyse çağrılır: tekrarlama kaydını oluşturur ve
-// ilk açılış bugünse ilk görevi hemen açar. Sonraki görevleri her sabah zamanlanmış
-// iş açar (bkz. lib/recurring-run.ts).
+// ilk açılış bugünse (saati de geldiyse) ilk görevi hemen açar. Sonraki görevleri
+// seçilen saatte zamanlanmış iş açar (bkz. lib/recurring-run.ts).
 export async function createRecurringTask(formData: FormData): Promise<CreateRecurringResult> {
   const userId = await getUserId();
   const fields = readTaskForm(formData);
@@ -55,10 +58,17 @@ export async function createRecurringTask(formData: FormData): Promise<CreateRec
     }
   }
 
+  // Açılış saati (Türkiye saati, tam saat); alan gelmezse sabah 09:00
+  const hourRaw = String(formData.get("repeat_hour") ?? "").trim();
+  const runHour = hourRaw === "" ? DEFAULT_RUN_HOUR : Number(hourRaw);
+  if (!isRunHour(runHour)) return { error: "Geçersiz açılış saati.", taskId: null };
+
   // Hafta içi tekrarında hafta sonu seçildiyse ilk açılış pazartesiye kayar
   const start = firstOccurrence(startRaw, frequency);
   const anchorDay = frequency === "monthly" ? dayOfMonth(start) : null;
-  const opensNow = start === today;
+  // İlk açılış bugünse ve saati geldiyse ilk görev hemen açılır; saati ilerideyse
+  // o saatte zamanlanmış iş açar
+  const opensNow = isDueNow(start, runHour, today, dayAndHour().hour);
 
   const supabase = await createClient();
   const { data: recurring, error } = await supabase
@@ -73,6 +83,7 @@ export async function createRecurringTask(formData: FormData): Promise<CreateRec
       frequency,
       anchor_day: anchorDay,
       due_after_days: dueAfter,
+      run_hour: runHour,
       next_run: opensNow ? nextOccurrenceAfter(start, today, frequency, anchorDay) : start,
       last_run: opensNow ? today : null,
     })

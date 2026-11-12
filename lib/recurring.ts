@@ -32,6 +32,25 @@ export const MAX_DUE_AFTER_DAYS = 60;
 // İlk açılış en fazla bu kadar ileri bir tarih olabilir
 export const MAX_START_AHEAD_DAYS = 366;
 
+// Açılış saati: Türkiye saatiyle tam saat (zamanlanmış iş saat başı çalışır)
+export const RUN_HOURS: number[] = Array.from({ length: 24 }, (_, hour) => hour);
+export const DEFAULT_RUN_HOUR = 9;
+
+export function isRunHour(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 23;
+}
+
+// 9 → "09:00"
+export function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+// Görev şimdi açılmalı mı? Açılış günü geldiyse ve o günün saati de geldiyse evet.
+// Kaçan bir açılış (sunucu kapalıydı) sonraki gün yine kendi saatinde açılır.
+export function isDueNow(nextRun: string, runHour: number, today: string, hour: number): boolean {
+  return nextRun <= today && runHour <= hour;
+}
+
 const WEEKDAYS = ["pazar", "pazartesi", "salı", "çarşamba", "perşembe", "cuma", "cumartesi"];
 
 function weekday(day: string): number {
@@ -105,16 +124,19 @@ function dayWithSuffix(day: number): string {
 
 // Tekrarın gününü de söyleyen kısa açıklama: "Her salı", "İki haftada bir · salı",
 // "Her ayın 15’i". Gün, sıradaki açılış tarihinden (aylıkta anchor_day'den) okunur.
+// runHour verilirse açılış saati de eklenir: "Her salı · 17:00".
 export function describeSchedule(
   frequency: RecurringFrequency,
   nextRun: string,
   anchorDay: number | null,
+  runHour?: number,
 ): string {
-  if (frequency === "weekly") return `Her ${WEEKDAYS[weekday(nextRun)]}`;
-  if (frequency === "biweekly") return `${FREQUENCY_LABELS.biweekly} · ${WEEKDAYS[weekday(nextRun)]}`;
+  const time = runHour === undefined ? "" : ` · ${hourLabel(runHour)}`;
+  if (frequency === "weekly") return `Her ${WEEKDAYS[weekday(nextRun)]}${time}`;
+  if (frequency === "biweekly") return `${FREQUENCY_LABELS.biweekly} · ${WEEKDAYS[weekday(nextRun)]}${time}`;
   if (frequency === "monthly") {
     const day = anchorDay ?? dayOfMonth(nextRun);
-    return `Her ayın ${dayWithSuffix(day)}${day > 28 ? " (kısa aylarda son gün)" : ""}`;
+    return `Her ayın ${dayWithSuffix(day)}${day > 28 ? " (kısa aylarda son gün)" : ""}${time}`;
   }
-  return FREQUENCY_LABELS[frequency];
+  return `${FREQUENCY_LABELS[frequency]}${time}`;
 }

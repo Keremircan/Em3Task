@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CalendarClock, FolderKanban, Pause, Play, Repeat, Trash, UserRound } from "lucide-react";
 import { deleteRecurringTask, setRecurringActive } from "@/actions/recurring";
 import type { RecurringFrequency } from "@/types/database";
-import { describeSchedule, DUE_AFTER_OPTIONS } from "@/lib/recurring";
+import { describeSchedule, DUE_AFTER_OPTIONS, hourLabel } from "@/lib/recurring";
 import { formatDay } from "@/lib/format";
 import { safe } from "@/lib/safe-action";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,6 +19,7 @@ export type RecurringItem = {
   anchor_day: number | null;
   due_after_days: number | null;
   next_run: string;
+  run_hour: number;
   is_active: boolean;
   assigned_to: string | null;
   project: { id: string; name: string } | null;
@@ -72,10 +73,12 @@ function Row({ item }: { item: RecurringItem }) {
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-          <span>{describeSchedule(item.frequency, item.next_run, item.anchor_day)}</span>
+          <span>{describeSchedule(item.frequency, item.next_run, item.anchor_day, item.run_hour)}</span>
           <span className="inline-flex items-center gap-1.5">
             <CalendarClock className="size-4" />
-            {item.is_active ? `Sıradaki açılış: ${formatDay(item.next_run)}` : "Yeni görev açılmıyor"}
+            {item.is_active
+              ? `Sıradaki açılış: ${formatDay(item.next_run)}, ${hourLabel(item.run_hour)}`
+              : "Yeni görev açılmıyor"}
           </span>
           {due && <span>{due}</span>}
           {item.project && (
