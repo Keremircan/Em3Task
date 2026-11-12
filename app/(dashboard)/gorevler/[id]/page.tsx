@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarClock, CalendarDays, FolderKanban, Hand, Lock, Repea
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { isLocked, isUuid, openBlockerCount } from "@/lib/tasks";
+import { describeSchedule } from "@/lib/recurring";
 import { PriorityControl } from "@/components/tasks/priority-control";
 import { DueBadge } from "@/components/tasks/due-badge";
 import { TaskChecklist } from "@/components/tasks/task-checklist";
@@ -109,6 +110,7 @@ async function TaskDetail({
          project:projects!tasks_project_id_fkey(id, name),
          assignee:profiles!tasks_assigned_to_fkey(full_name),
          creator:profiles!tasks_created_by_fkey(full_name),
+         recurring:recurring_tasks!tasks_recurring_id_fkey(frequency, next_run, anchor_day, is_active),
          blockers:task_dependencies!task_dependencies_task_id_fkey(blocker:tasks!task_dependencies_depends_on_id_fkey(id, title, status)),
          dependents:task_dependencies!task_dependencies_depends_on_id_fkey(dependent:tasks!task_dependencies_task_id_fkey(id, title, status))`,
       )
@@ -201,6 +203,10 @@ async function TaskDetail({
     .map((c) => ({ id: c.id, title: c.title, project: c.project?.name ?? null }));
   const canEditDependencies = task.created_by === user.id || user.isAdmin;
   const locked = isLocked(task);
+  // Tekrarlayan görevden açıldıysa sıklığı: "Her salı", "Her ayın 15’i"…
+  const schedule = task.recurring
+    ? describeSchedule(task.recurring.frequency, task.recurring.next_run, task.recurring.anchor_day)
+    : null;
 
   const creatorName = task.creator?.full_name ?? "Eski üye";
   const isOpen = task.assigned_to === null;
@@ -278,7 +284,11 @@ async function TaskDetail({
                 </p>
               )}
 
-              <dl className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 2xl:grid-cols-5">
+              <dl
+                className={`mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 ${
+                  schedule ? "2xl:grid-cols-3" : "2xl:grid-cols-5"
+                }`}
+              >
                 <Meta label="Atayan">
                   <Person name={creatorName} />
                 </Meta>
@@ -314,6 +324,19 @@ async function TaskDetail({
                     {formatDateTime(task.created_at)}
                   </span>
                 </Meta>
+                {schedule && task.recurring && (
+                  <Meta label="Tekrar">
+                    <span className="flex items-center gap-2">
+                      <Repeat className="size-4 shrink-0 text-slate-400" />
+                      <span>
+                        {schedule}
+                        {!task.recurring.is_active && (
+                          <span className="font-normal text-slate-400"> · duraklatıldı</span>
+                        )}
+                      </span>
+                    </span>
+                  </Meta>
+                )}
               </dl>
 
               <div className="mt-5 border-t border-slate-100 pt-5">

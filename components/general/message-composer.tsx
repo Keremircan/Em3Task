@@ -26,6 +26,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { safe } from "@/lib/safe-action";
 import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
 import { MentionList, useMentions } from "@/components/chat/mentions";
+import { isSendKey } from "@/components/chat/send-key";
 
 type Sending = {
   text: string;
@@ -289,8 +290,8 @@ export function MessageComposer({
             onKeyDown={(e) => {
               // "@" öneri listesi açıksa oklar/Enter kişi seçer
               if (mention.onKeyDown(e)) return;
-              // Enter gönderir, Shift + Enter yeni satır
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              // Enter yeni satır açar (tarayıcının kendi davranışı); Shift + Enter gönderir
+              if (isSendKey(e)) {
                 e.preventDefault();
                 send();
               }
@@ -312,7 +313,7 @@ export function MessageComposer({
           </button>
         </div>
         <p className="mt-1.5 pl-1 text-xs text-slate-400 sm:pl-[104px]">
-          Enter ile gönder · Shift + Enter yeni satır · link, doküman, Markdown ve ```kod```
+          Enter yeni satır · Shift + Enter ile gönder · link, doküman, Markdown ve ```kod```
         </p>
 
         {errors.length > 0 && (

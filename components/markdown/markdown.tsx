@@ -5,6 +5,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import { CodeBlock } from "./code-block";
 import { rehypeMentions } from "./rehype-mentions";
+import { remarkBreaks } from "./remark-breaks";
 
 // Markdown içindeki ham HTML render edilmez (react-markdown varsayılanı),
 // javascript: gibi tehlikeli link adresleri de otomatik temizlenir.
@@ -47,7 +48,7 @@ export function Markdown({ children, mentions }: { children: string; mentions?: 
   return (
     <div className="markdown">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={
           mentions?.length
             ? [[rehypeHighlight, { detect: false }], [rehypeMentions, { names: mentions }]]

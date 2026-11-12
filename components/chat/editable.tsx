@@ -6,6 +6,7 @@ import { editComment } from "@/actions/task-details";
 import { editGeneralMessage } from "@/actions/general";
 import { safe } from "@/lib/safe-action";
 import { formatDateTime } from "@/lib/format";
+import { isSendKey } from "./send-key";
 
 type Kind = "comment" | "general";
 
@@ -154,7 +155,8 @@ function EditBox({ initial, onSave, onCancel }: { initial: string; onSave: (t: s
             e.preventDefault();
             onCancel();
           }
-          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          // Yazma kutularıyla aynı: Enter yeni satır, Shift + Enter kaydeder
+          if (isSendKey(e)) {
             e.preventDefault();
             onSave(value);
           }
@@ -165,7 +167,7 @@ function EditBox({ initial, onSave, onCancel }: { initial: string; onSave: (t: s
         className="w-full resize-y rounded-lg border border-teal-400 bg-white px-3 py-2 text-sm text-slate-900 outline-none [field-sizing:content] focus:ring-3 focus:ring-teal-500/15"
       />
       <div className="flex items-center justify-end gap-2">
-        <span className="mr-auto hidden text-[11px] text-slate-400 sm:inline">Ctrl+Enter kaydet · Esc vazgeç</span>
+        <span className="mr-auto hidden text-[11px] text-slate-400 sm:inline">Shift + Enter kaydet · Esc vazgeç</span>
         <button
           type="button"
           onClick={onCancel}

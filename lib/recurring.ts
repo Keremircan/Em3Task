@@ -9,9 +9,9 @@ export const FREQUENCIES: RecurringFrequency[] = ["weekdays", "daily", "weekly",
 export const FREQUENCY_LABELS: Record<RecurringFrequency, string> = {
   weekdays: "Hafta içi her gün",
   daily: "Her gün",
-  weekly: "Her hafta",
+  weekly: "Haftada bir",
   biweekly: "İki haftada bir",
-  monthly: "Her ay",
+  monthly: "Ayda bir",
 };
 
 export function isFrequency(value: unknown): value is RecurringFrequency {
@@ -95,17 +95,26 @@ export function nextOccurrenceAfter(
   return day;
 }
 
-// "Her hafta · pazartesi", "Her ay · ayın 15'i" gibi kısa açıklama
+// Ayın günü, iyelik ekiyle: 1’i, 2’si, 3’ü, 6’sı, 9’u, 10’u, 20’si, 30’u…
+const LAST_DIGIT_SUFFIX = ["", "i", "si", "ü", "ü", "i", "sı", "si", "i", "u"];
+
+function dayWithSuffix(day: number): string {
+  const suffix = day % 10 === 0 ? (day === 20 ? "si" : "u") : LAST_DIGIT_SUFFIX[day % 10];
+  return `${day}’${suffix}`;
+}
+
+// Tekrarın gününü de söyleyen kısa açıklama: "Her salı", "İki haftada bir · salı",
+// "Her ayın 15’i". Gün, sıradaki açılış tarihinden (aylıkta anchor_day'den) okunur.
 export function describeSchedule(
   frequency: RecurringFrequency,
   nextRun: string,
   anchorDay: number | null,
 ): string {
-  const label = FREQUENCY_LABELS[frequency];
-  if (frequency === "weekly" || frequency === "biweekly") return `${label} · ${WEEKDAYS[weekday(nextRun)]}`;
+  if (frequency === "weekly") return `Her ${WEEKDAYS[weekday(nextRun)]}`;
+  if (frequency === "biweekly") return `${FREQUENCY_LABELS.biweekly} · ${WEEKDAYS[weekday(nextRun)]}`;
   if (frequency === "monthly") {
     const day = anchorDay ?? dayOfMonth(nextRun);
-    return `${label} · ayın ${day}. günü${day > 28 ? " (kısa aylarda son gün)" : ""}`;
+    return `Her ayın ${dayWithSuffix(day)}${day > 28 ? " (kısa aylarda son gün)" : ""}`;
   }
-  return label;
+  return FREQUENCY_LABELS[frequency];
 }

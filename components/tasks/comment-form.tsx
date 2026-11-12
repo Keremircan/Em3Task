@@ -9,6 +9,7 @@ import { field, primaryButton } from "@/components/ui/styles";
 import { safe } from "@/lib/safe-action";
 import { EmojiButton, insertAtCursor } from "@/components/chat/emoji-picker";
 import { MentionList, useMentions } from "@/components/chat/mentions";
+import { isSendKey } from "@/components/chat/send-key";
 import type { Mentionable } from "@/lib/mentions";
 
 type PendingComment = { key: string; text: string };
@@ -118,8 +119,8 @@ export function CommentThread({
           onKeyDown={(e) => {
             // "@" öneri listesi açıksa oklar/Enter kişi seçer
             if (mention.onKeyDown(e)) return;
-            // Enter gönderir, Shift + Enter yeni satır (Türkçe klavye birleşimi sürerken değil)
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            // Enter yeni satır açar (tarayıcının kendi davranışı); Shift + Enter gönderir
+            if (isSendKey(e)) {
               e.preventDefault();
               submit();
             }
@@ -155,7 +156,7 @@ export function CommentThread({
               onSelect={(emoji) => insertAtCursor(textareaRef.current, content, emoji, setContent)}
             />
             <p className="text-xs text-slate-400">
-              Enter ile gönder · Shift + Enter yeni satır · Markdown desteklenir
+              Enter yeni satır · Shift + Enter ile gönder · Markdown desteklenir
             </p>
           </div>
           <button type="submit" disabled={!content.trim()} className={primaryButton}>

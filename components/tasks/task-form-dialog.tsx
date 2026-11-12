@@ -13,7 +13,14 @@ import {
 } from "@/lib/attachments";
 import { EVERYONE } from "@/lib/tasks";
 import { todayKey } from "@/lib/days";
-import { DUE_AFTER_OPTIONS, FREQUENCIES, FREQUENCY_LABELS } from "@/lib/recurring";
+import {
+  describeSchedule,
+  DUE_AFTER_OPTIONS,
+  firstOccurrence,
+  FREQUENCIES,
+  FREQUENCY_LABELS,
+  isFrequency,
+} from "@/lib/recurring";
 import type { TaskPriority } from "@/types/database";
 import { PrioritySelect } from "./priority-select";
 import { Modal } from "@/components/ui/modal";
@@ -56,8 +63,14 @@ export function TaskFormDialog({
   const [progress, setProgress] = useState<string | null>(null);
   // Tekrar sıklığı ("" = tekrarlanmaz). Sadece yeni görevde seçilebilir.
   const [repeat, setRepeat] = useState("");
+  const [repeatStart, setRepeatStart] = useState(todayKey);
   const editing = Boolean(task);
   const repeating = !editing && repeat !== "";
+  // Seçimin özeti ("Her salı", "Her ayın 15’i"): gün, ilk açılış tarihinden okunur
+  const repeatSummary =
+    repeating && isFrequency(repeat) && /^\d{4}-\d{2}-\d{2}$/.test(repeatStart)
+      ? describeSchedule(repeat, firstOccurrence(repeatStart, repeat), null)
+      : null;
 
   function close() {
     if (pending) return;
@@ -309,7 +322,8 @@ export function TaskFormDialog({
                 type="date"
                 required
                 min={todayKey()}
-                defaultValue={todayKey()}
+                value={repeatStart}
+                onChange={(e) => setRepeatStart(e.target.value)}
                 disabled={pending}
                 className={`${field} h-10`}
               />
@@ -321,9 +335,10 @@ export function TaskFormDialog({
           <p className="flex items-start gap-2 rounded-xl bg-teal-50 px-3.5 py-2.5 text-sm text-teal-900">
             <Repeat className="mt-0.5 size-4 shrink-0 text-teal-700" />
             <span>
-              Görev seçtiğiniz sıklıkta her sabah 09:00’da kendiliğinden açılır; ilk açılış bugünse
-              ilki şimdi açılır. Haftalık ve aylık tekrarda gün, ilk açılış tarihine göre belirlenir.
-              Tekrarı “Atadığım görevler” sayfasından duraklatabilir ya da silebilirsiniz.
+              {repeatSummary && <strong className="font-bold">{repeatSummary}. </strong>}
+              Görev sabah 09:00’da kendiliğinden açılır; ilk açılış bugünse ilki şimdi açılır.
+              Haftalık ve aylık tekrarda gün, ilk açılış tarihine göre belirlenir. Tekrarı
+              “Atadığım görevler” sayfasından duraklatabilir ya da silebilirsiniz.
             </span>
           </p>
         )}
